@@ -51,8 +51,6 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
     # Centering matrix
     H = np.eye(N) - np.ones((N, N)) / N
 
-    # print(groupIdx)
-
     # Construct L matrix
    
     L = np.zeros((N, N), dtype=np.float64)
@@ -70,40 +68,24 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
                 groupSize_j = NG[unique_groups == gj][0]
                 L[i, j] = -1 / (G**2 * groupSize_i * groupSize_j)
 
-                # print(groupSize_i)
-                # print(groupSize_j)
-                # print(L[i, j])
-    # print(L)
-
-   
-
-
     # Center kernel matrices
     Ky = H @ Ky @ H
     Kx = H @ Kx @ H
-    print(Ky)
-
     
     # Matrix A
     # A_left
     A_left = Kx @ L @ Kx + Kx + lambd * np.eye(N)
-    print(A_left)
 
     # A_right
     mid = solve(Ky + N * epsilon * np.eye(N), Kx @ Kx)
     A_right = Ky @ mid
-
-    print(A_right)
-
-    # Solve hệ phương trình
     A = solve(A_left, A_right)
-    # print(A)/home/caokhoi/Downloads/A.mat
 
-    data = loadmat('A.mat')
-    L_matlab = data['A']  # Ma trận L từ MATLAB
-    is_close = np.allclose(A, L_matlab, atol=1e-8)
-    print(A)
-    print("Hai ma trận giống nhau không?", is_close)
+    # data = loadmat('A.mat')
+    # L_matlab = data['A']  # Ma trận L từ MATLAB
+    # is_close = np.allclose(A, L_matlab, atol=1e-8)
+    # print(A)
+    # print("Hai ma trận giống nhau không?", is_close)
 
     # Eigendecomposition
     # eigvals, eigvecs = eigs(A, k=M)
@@ -134,7 +116,7 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
 
     # Project training data
 
-    print(f'VT: {V.T.shape}')
+    # print(f'VT: {V.T.shape}')
     # print(f'Kxc: {Kx_c.shape}')
     X = V.T @ Kx
 
@@ -161,7 +143,7 @@ def dica_projection(train_x, train_y, domain_idx, lambda_, epsilon, m, gamma_x=N
     if supervised:
         L = rbf_kernel(train_y.reshape(-1, 1), train_y.reshape(-1, 1), gamma=gamma_y)
     else:
-        L = np.eye(N)  # placeholder
+        L = np.eye(N)
 
     # Domain-wise Q matrix
     unique_domains = np.unique(domain_idx)
@@ -185,8 +167,6 @@ def dica_projection(train_x, train_y, domain_idx, lambda_, epsilon, m, gamma_x=N
     # Solve B eigenvectors: A B = B_mat B Γ
     eigvals, eigvecs = eigh(A, B_mat, subset_by_index=[N - m, N - 1])
     B = eigvecs  # shape: (N, m)
-
-    # Optional: Normalize eigenvectors if needed
     return B, K
 
 def project_kernel(K, B):

@@ -1,8 +1,6 @@
 import numpy as np
 import scipy as sp 
 from sklearn import linear_model
-from sklearn import svm
-from sklearn import metrics
 import itertools
 
 def mat_hsic(X,n_samples_per_task):
@@ -31,13 +29,9 @@ def mat_hsic(X,n_samples_per_task):
 
 
 def np_getDistances(x,y):
+
     K = (x[:,:, np.newaxis] - y.T)
-    # print('hihi')
-    # print(x.shape)
-    # print(y.shape)
-    # print(K.shape)
     result = np.linalg.norm(K,axis = 1)
-    print(result.shape)
     return result 
 
 def numpy_GetKernelMat(X,sX):
@@ -48,39 +42,38 @@ def numpy_GetKernelMat(X,sX):
 	return Kernel
 
 
-def numpy_HsicGammaTest(X,Y, sigmaX, sigmaY, DomKer = 0):
+def numpy_HsicGammaTest(X,Y, sigma_X, sigma_Y, domain_kernel = 0):
     """
- 
-
     Args:
-        - SigmaX: kernel paremeter for X 
-        - Domker: Domain martrix for Y 
+        - sigma_X: kernel parameter for X
+        - sigma_Y: kernel parameter for Y 
+        - domain_kernel: Domain martrix for Y 
 
     """
     
     n = X.T.shape[1]
     
-    KernelX = numpy_GetKernelMat(X,sigmaX)
+    kernel_X = numpy_GetKernelMat(X, sigma_X)
 
-    KernelY = DomKer
+    kernel_Y = domain_kernel
 
     coef = 1./n
 
     # The formula can be founded there https://proceedings.neurips.cc/paper_files/paper/2007/file/d5cfead94f5350c12c322b5b664544c1-Paper.pdf
 
-    HSIC = (coef**2) * np.sum(KernelX * KernelY) + coef**4 * np.sum(
-                KernelX)*np.sum(KernelY) - 2* coef**3 * np.sum(np.sum(KernelX,axis=1)*np.sum(KernelY, axis=1))
+    HSIC = (coef**2) * np.sum(kernel_X * kernel_Y) + coef**4 * np.sum(
+                kernel_X)*np.sum(kernel_Y) - 2* coef**3 * np.sum(np.sum(kernel_X,axis=1)*np.sum(kernel_Y, axis=1))
 
     #Get sums of Kernels
-    KXsum = np.sum(KernelX)
-    KYsum = np.sum(KernelY)
+    KXsum = np.sum(kernel_X)
+    KYsum = np.sum(kernel_Y)
 
     #Get stats for gamma approx
 
     xMu = 1./(n*(n-1))*(KXsum - n)
     yMu = 1./(n*(n-1))*(KYsum - n)
-    V1 = coef**2*np.sum(KernelX*KernelX) + coef**4*KXsum**2 - 2*coef**3*np.sum(np.sum(KernelX,axis=1)**2)
-    V2 = coef**2*np.sum(KernelY*KernelY) + coef**4*KYsum**2 - 2*coef**3*np.sum(np.sum(KernelY,axis=1)**2)
+    V1 = coef**2*np.sum(kernel_X * kernel_X) + coef**4*KXsum**2 - 2*coef**3*np.sum(np.sum(kernel_X,axis=1)**2)
+    V2 = coef**2*np.sum(kernel_Y * kernel_Y) + coef**4*KYsum**2 - 2*coef**3*np.sum(np.sum(KernelY,axis=1)**2)
 
     meanH0 = (1. + xMu*yMu - xMu - yMu)/n
     varH0 = 2.*(n-4)*(n-5)/(n*(n-1.)*(n-2.)*(n-3.))*V1*V2
@@ -304,15 +297,8 @@ def subset(x, y, n_samples_per_task_list, delta, valid_split, use_hsic = False,
 def greedy_search(train_x, train_y, valid_x, valid_y, n_ex, n_ex_valid, 
                   use_hsic, alpha, inc = 0.0):
 
-    num_s = np.sum(n_ex)
-
     num_predictors = train_x.shape[1]
-    best_subset = np.array([])
-    best_subset_acc = np.array([])
-    best_mse_overall = 1e10
-
-    already_acc = False
-
+ 
     selected = np.zeros(num_predictors)
     accepted_subset = None
 
@@ -334,9 +320,6 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_ex, n_ex_valid,
     mse_current = np.mean((pred - valid_y) ** 2)
     residual = valid_y - pred
 
-    print(f'NEX valid size: {n_ex_valid.shape}')
-    print(f'residual shape {residual.shape}')
-
     residTup = levene_pval(residual, n_ex_valid, n_ex_valid.size)
     levene = sp.stats.levene(*residTup)
 
@@ -348,7 +331,7 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_ex, n_ex_valid,
     count = 0
     while (stay==1):
 
-        print(f'********Loop: {ind}**********')
+        # print(f'********Loop: {ind}**********')
         
         pvals_a = np.zeros(num_predictors)
         statistic_a = 1e10 * np.ones(num_predictors)
@@ -359,16 +342,16 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_ex, n_ex_valid,
             current_subset = np.sort(np.where(selected == 1)[0])
             regr = linear_model.LinearRegression()
 
-            print (f'Feature: {p}')
-            print (f'Current subset: {current_subset}')
-            print(f'Select: {selected}')
+            # print (f'Feature: {p}')
+            # print (f'Current subset: {current_subset}')
+            # print(f'Select: {selected}')
             
             if selected[p]==0:
 
         
                 subset_add = np.append(current_subset, p).astype(int)
 
-                print(f'selected[{p}] = 0, add p, current subset is: {subset_add}')
+                # print(f'selected[{p}] = 0, add p, current subset is: {subset_add}')
                 regr.fit(train_x[:,subset_add], train_y.flatten())
                 
                 pred = regr.predict(valid_x[:,subset_add])[:,np.newaxis]
@@ -393,7 +376,7 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_ex, n_ex_valid,
 
                 subset_rem = np.sort(np.where(acc_rem == 1)[0])
 
-                print(f'selected[{p}] = 1, remove p, current subset is: {subset_rem}')
+                # print(f'selected[{p}] = 1, remove p, current subset is: {subset_rem}')
 
                 if subset_rem.size ==0: continue
                 
@@ -422,7 +405,7 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_ex, n_ex_valid,
 
             
             best_mse = np.amin(mse_a[np.where(pvals_a > alpha)])
-            print(f'Best MSE: {best_mse} in {mse_a}, with  p-values {pvals_a} and alpha {alpha}'  )
+            # print(f'Best MSE: {best_mse} in {mse_a}, with  p-values {pvals_a} and alpha {alpha}'  )
 
             already_acc = True
 
@@ -431,28 +414,28 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_ex, n_ex_valid,
 
             accepted_subset = np.sort(np.where(selected == 1)[0])
 
-            print(f'Found accepted subset, the current subset is: {accepted_subset}')
-            print(f'selected become: {selected}')
+            # print(f'Found accepted subset, the current subset is: {accepted_subset}')
+            # print(f'selected become: {selected}')
             binary = np.sum(pow_2 * selected)
    
             if (bins==binary).any():
-                print('end')
+                # print('end')
                 stay = 0
             bins.append(binary)
         else:
             best_pval_arg = np.argmin(statistic_a)
 
             selected[best_pval_arg] = (selected[best_pval_arg] + 1) % 2
-            print(f'Not found the best subset, choose the feature {best_pval_arg} , selected become: {selected}')
+            # print(f'Not found the best subset, choose the feature {best_pval_arg} , selected become: {selected}')
             binary = np.sum(pow_2 * selected)
 
             if (bins==binary).any():
-                print(f'end')
+                # print(f'end')
                 stay = 0
             bins.append(binary)
 
         if ind>n_iters:
-            print(f'end')
+            # print(f'end')
             stay = 0
         ind += 1
 

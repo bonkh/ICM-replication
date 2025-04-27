@@ -35,7 +35,7 @@ def mSDA(X, p, l):
 
 def mSDA_features(w, x):
 
-  for i in xrange(w.shape[0]):
+  for i in range(w.shape[0]):
     x = append(ones((1,x.shape[1])), x,0)
     x = dot(w[i], x)
 
