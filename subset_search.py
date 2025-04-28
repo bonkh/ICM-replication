@@ -73,7 +73,7 @@ def numpy_HsicGammaTest(X,Y, sigma_X, sigma_Y, domain_kernel = 0):
     xMu = 1./(n*(n-1))*(KXsum - n)
     yMu = 1./(n*(n-1))*(KYsum - n)
     V1 = coef**2*np.sum(kernel_X * kernel_X) + coef**4*KXsum**2 - 2*coef**3*np.sum(np.sum(kernel_X,axis=1)**2)
-    V2 = coef**2*np.sum(kernel_Y * kernel_Y) + coef**4*KYsum**2 - 2*coef**3*np.sum(np.sum(KernelY,axis=1)**2)
+    V2 = coef**2*np.sum(kernel_Y * kernel_Y) + coef**4*KYsum**2 - 2*coef**3*np.sum(np.sum(kernel_Y,axis=1)**2)
 
     meanH0 = (1. + xMu*yMu - xMu - yMu)/n
     varH0 = 2.*(n-4)*(n-5)/(n*(n-1.)*(n-2.)*(n-3.))*V1*V2
@@ -191,7 +191,7 @@ def full_search(train_x, train_y, valid_x, valid_y, n_samples_per_task, n_sample
 
         stat, a, b = numpy_HsicGammaTest(residual, valid_dom,
                                                sx, 1, 
-                                               DomKer = valid_dom)
+                                               domain_kernel = valid_dom)
         pvals = 1. - sp.stats.gamma.cdf(stat, a, scale=b)
     else:
         residTup = levene_pval(residual, n_samples_per_task, num_tasks)
@@ -233,7 +233,7 @@ def full_search(train_x, train_y, valid_x, valid_y, n_samples_per_task, n_sample
                 ls = np_getDistances(residual, residual)
                 sx= 0.5 * np.median(ls.flatten())
                 stat, a, b = numpy_HsicGammaTest(
-                    residual, valid_dom, sx, 1, DomKer = valid_dom)
+                    residual, valid_dom, sx, 1, domain_kernel = valid_dom)
                 pvals = 1.- sp.stats.gamma.cdf(stat, a, scale=b)
             else:
                 residTup = levene_pval(residual, n_samples_per_task_valid, num_tasks)
