@@ -81,23 +81,23 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
     A_right = Ky @ mid
     A = solve(A_left, A_right)
 
-    # data = loadmat('A.mat')
-    # L_matlab = data['A']  # Ma trận L từ MATLAB
-    # is_close = np.allclose(A, L_matlab, atol=1e-8)
-    # print(A)
-    # print("Hai ma trận giống nhau không?", is_close)
+    data = loadmat('A.mat')
+    L_matlab = data['A']  # Ma trận L từ MATLAB
+    is_close = np.allclose(A, L_matlab, atol=1e-8)
+    print(A)
+    print("Hai ma trận giống nhau không?", is_close)
 
-    # Eigendecomposition
-    # eigvals, eigvecs = eigs(A, k=M)
-    # eigvals, eigvecs = eigh(A)
-    # eigvals = eigvals[-M:]
-    # eigvecs = eigvecs[:, -M:]
-    # # eigvals = np.real(eigvals)
-    # # eigvecs = np.real(eigvecs)
+    Eigendecomposition
+    eigvals, eigvecs = eigs(A, k=M)
+    eigvals, eigvecs = eigh(A)
+    eigvals = eigvals[-M:]
+    eigvecs = eigvecs[:, -M:]
+    # eigvals = np.real(eigvals)
+    # eigvecs = np.real(eigvecs)
 
-    # # Normalize eigenvectors
-    # for i in range(M):
-    #     eigvecs[:, i] /= np.sqrt(eigvals[i])
+    # Normalize eigenvectors
+    for i in range(M):
+        eigvecs[:, i] /= np.sqrt(eigvals[i])
 
     eigvals, eigvecs = eigs(A, k=M)
 
