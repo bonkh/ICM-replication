@@ -13,8 +13,8 @@ from sklearn.metrics import mean_squared_error
 
 np.random.seed(2025)
 
-n_samples_per_task = 300 # (n_examples_task)
-n_tasks = 3
+n_samples_per_task = 4000 # (n_examples_task)
+n_tasks = 7
 n_test_tasks = 10 #n_test_tasks = 100
 n_predictors = 3
 n_ex = []
@@ -135,7 +135,14 @@ lambda_ = 1e-3
 epsilon = 1e-3
 m = 2  # Number of components to keep
 
-V, D, Z_train, Z_test = dica(Kx=Kx, Ky=Ky, Kt=Kt , groupIdx=domain_idx, lambd=lambda_, epsilon=epsilon, M=m)
+import time
+
+start_time = time.time()
+
+V, D, Z_train, Z_test = dica(Kx=Kx, Ky=Ky, Kt=Kt, groupIdx=domain_idx, lambd=lambda_, epsilon=epsilon, M=m)
+
+end_time = time.time()
+print(f"Execution time: {end_time - start_time:.4f} seconds")
 
 print(f'X train: {train_x.shape}')
 print(f'Z train {Z_train.shape}')
@@ -147,14 +154,14 @@ Z_train = Z_train.T
 Z_test = Z_test.T
 
 
-# ----------- 1. Raw features (no transformation) ----------------
-reg_raw = LinearRegression()
-reg_raw.fit(train_x, train_y)
-preds_raw = reg_raw.predict(test_x)
-mse_raw = mean_squared_error(test_y, preds_raw)
-print(f"Raw feature MSE: {mse_raw:.4f}")
+# # ----------- 1. Raw features (no transformation) ----------------
+# reg_raw = LinearRegression()
+# reg_raw.fit(train_x, train_y)
+# preds_raw = reg_raw.predict(test_x)
+# mse_raw = mean_squared_error(test_y, preds_raw)
+# print(f"Raw feature MSE: {mse_raw:.4f}")
 
-# ----------- 2. Causal subset features using s_hat -------------
+# # ----------- 2. Causal subset features using s_hat -------------
 # train_x_s = train_x[:, s_hat]
 # test_x_s = test_x[:, s_hat]
 
@@ -165,7 +172,8 @@ print(f"Raw feature MSE: {mse_raw:.4f}")
 # print(f"Causal subset (s_hat) MSE: {mse_subset:.4f}")
 
 
-#-------------Greedy subset---------------
+# #-------------Greedy subset---------------
+# print("Greedy subset search")
 # s_hat_greedy = greedy_subset(train_x, train_y, n_ex, valid_split=0.5, 
 #                              delta=0.05, use_hsic=use_hsic)
 
@@ -197,21 +205,21 @@ mse_dica = mean_squared_error(test_y, preds_dica)
 print(f"DICA generalization MSE: {mse_dica:.4f}")
 
 
-# B, K = dica_projection(train_x, train_y, domain_idx, lambda_=1.0, epsilon=1e-3, m=5)
+B, K = dica_projection(train_x, train_y, domain_idx, lambda_=1.0, epsilon=1e-3, m=5)
 
-# # Project training kernel to domain-invariant space
-# K_proj = project_kernel(K, B)
+# Project training kernel to domain-invariant space
+K_proj = project_kernel(K, B)
 
-# # Compute test kernel
-# Kt = rbf_kernel(test_x, train_x, gamma=1.0 / train_x.shape[1])
+# Compute test kernel
+Kt = rbf_kernel(test_x, train_x, gamma=1.0 / train_x.shape[1])
 
-# # Project test kernel
-# Kt_proj = project_test_kernel(Kt, B, K)
+# Project test kernel
+Kt_proj = project_test_kernel(Kt, B, K)
 
-# # Optionally use Ridge regression
+# Optionally use Ridge regression
 
-# reg = LinearRegression()
-# reg.fit(K_proj, train_y)
-# preds = reg.predict(Kt_proj)
-# mse_dica_2 = mean_squared_error(test_y, preds)
-# print(f"DICA generalization MSE 2: {mse_dica_2:.4f}")
+reg = LinearRegression()
+reg.fit(K_proj, train_y)
+preds = reg.predict(Kt_proj)
+mse_dica_2 = mean_squared_error(test_y, preds)
+print(f"DICA generalization MSE 2: {mse_dica_2:.4f}")

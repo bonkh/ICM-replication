@@ -60,7 +60,6 @@ def numpy_HsicGammaTest(X,Y, sigma_X, sigma_Y, domain_kernel = 0):
     coef = 1./n
 
     # The formula can be founded there https://proceedings.neurips.cc/paper_files/paper/2007/file/d5cfead94f5350c12c322b5b664544c1-Paper.pdf
-
     HSIC = (coef**2) * np.sum(kernel_X * kernel_Y) + coef**4 * np.sum(
                 kernel_X)*np.sum(kernel_Y) - 2* coef**3 * np.sum(np.sum(kernel_X,axis=1)*np.sum(kernel_Y, axis=1))
 
@@ -342,16 +341,16 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_ex, n_ex_valid,
             current_subset = np.sort(np.where(selected == 1)[0])
             regr = linear_model.LinearRegression()
 
-            # print (f'Feature: {p}')
-            # print (f'Current subset: {current_subset}')
-            # print(f'Select: {selected}')
+            print (f'Feature: {p}')
+            print (f'Current subset: {current_subset}')
+            print (f'Select: {selected}')
             
             if selected[p]==0:
 
         
                 subset_add = np.append(current_subset, p).astype(int)
 
-                # print(f'selected[{p}] = 0, add p, current subset is: {subset_add}')
+                print(f'selected[{p}] = 0, add p, current subset is: {subset_add}')
                 regr.fit(train_x[:,subset_add], train_y.flatten())
                 
                 pred = regr.predict(valid_x[:,subset_add])[:,np.newaxis]
@@ -367,6 +366,7 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_ex, n_ex_valid,
                 statistic_a[p] = levene[0]
                 mse_a[p] = mse_current
 
+                print(f'MSE: {mse_current} and p-value: {pvals_a[p]}')
                 all_sets.append(subset_add)
                 all_pvals.append(levene[1])
                 
@@ -376,7 +376,7 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_ex, n_ex_valid,
 
                 subset_rem = np.sort(np.where(acc_rem == 1)[0])
 
-                # print(f'selected[{p}] = 1, remove p, current subset is: {subset_rem}')
+                print(f'selected[{p}] = 1, remove p, current subset is: {subset_rem}')
 
                 if subset_rem.size ==0: continue
                 
@@ -397,25 +397,28 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_ex, n_ex_valid,
 
                 all_sets.append(subset_rem)
                 all_pvals.append(levene[1])
+                print(f'MSE: {mse_current} and p-value: {pvals_a[p]}')
 
         accepted = np.where(pvals_a > alpha)
-
+        print(f'Accepted: {accepted[0]}')
 
         if accepted[0].size>0:
 
             
             best_mse = np.amin(mse_a[np.where(pvals_a > alpha)])
-            # print(f'Best MSE: {best_mse} in {mse_a}, with  p-values {pvals_a} and alpha {alpha}'  )
+            print(f'Best MSE: {best_mse} in {mse_a}, with  p-values {pvals_a} and alpha {alpha}'  )
 
             already_acc = True
 
+            # print(f'Pre-Accepted: {selected[np.where(mse_a == best_mse)] }')
+            #Whyyyyyyyy? Why divide to 2? I don't get it
             selected[np.where(mse_a == best_mse)] = \
               (selected[np.where(mse_a == best_mse)] + 1) % 2
 
             accepted_subset = np.sort(np.where(selected == 1)[0])
 
-            # print(f'Found accepted subset, the current subset is: {accepted_subset}')
-            # print(f'selected become: {selected}')
+            print(f'Found accepted subset, the current subset is: {accepted_subset}')
+            print(f'selected become: {selected}')
             binary = np.sum(pow_2 * selected)
    
             if (bins==binary).any():
