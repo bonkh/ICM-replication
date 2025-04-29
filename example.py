@@ -5,7 +5,8 @@ from sklearn.linear_model import LinearRegression
 
 
 from sklearn.metrics.pairwise import rbf_kernel
-from dica import *
+# from dica import *
+from dica_projection import *
 
 
 from sklearn.linear_model import Ridge
