@@ -206,16 +206,16 @@ mse_dica = mean_squared_error(test_y, preds_dica)
 print(f"DICA generalization MSE: {mse_dica:.4f}")
 
 
-B, K = dica_projection(train_x, train_y, domain_idx, lambda_=1.0, epsilon=1e-3, m=5)
+B, K = dica_projection_gpu(train_x, train_y, domain_idx, lambda_=1.0, epsilon=1e-3, m=5)
 
 # Project training kernel to domain-invariant space
-K_proj = project_kernel(K, B)
+K_proj = project_kernel_gpu(K, B)
 
 # Compute test kernel
 Kt = rbf_kernel(test_x, train_x, gamma=1.0 / train_x.shape[1])
 
 # Project test kernel
-Kt_proj = project_test_kernel(Kt, B, K)
+Kt_proj = project_test_kernel_gpu(Kt, B, K)
 
 # Optionally use Ridge regression
 
