@@ -14,7 +14,7 @@ from sklearn.metrics import mean_squared_error
 np.random.seed(2025)
 
 n_samples_per_task = 4000 # (n_examples_task)
-n_tasks = 7
+n_tasks = 3
 n_test_tasks = 10 #n_test_tasks = 100
 n_predictors = 3
 n_ex = []
@@ -37,62 +37,62 @@ delta = 0.05
 
 # Generate training tasks
 
-# for task in range(n_tasks):
-#     gamma_task = np.random.uniform(-1,1)
-#     x1 = np.random.normal(0, sx1, (n_samples_per_task, 1))
-#     x3 = np.random.normal(0, sx3, (n_samples_per_task, 1))
-#     y = alpha[0] * x1 + alpha[1] * x3 + np.random.normal(0, sigma, (n_samples_per_task, 1))
+for task in range(n_tasks):
+    gamma_task = np.random.uniform(-1,1)
+    x1 = np.random.normal(0, sx1, (n_samples_per_task, 1))
+    x3 = np.random.normal(0, sx3, (n_samples_per_task, 1))
+    y = alpha[0] * x1 + alpha[1] * x3 + np.random.normal(0, sigma, (n_samples_per_task, 1))
 
-#     x2 = gamma_task*y + np.random.normal(0, sx2, (n_samples_per_task, 1))
+    x2 = gamma_task*y + np.random.normal(0, sx2, (n_samples_per_task, 1))
 
-#     x_task = np.concatenate([x1, x2, x3],axis = 1)
-#     train_x = np.append(train_x, x_task, axis = 0)
-#     train_y = np.append(train_y, y)
-#     n_ex.append(n_samples_per_task)
+    x_task = np.concatenate([x1, x2, x3],axis = 1)
+    train_x = np.append(train_x, x_task, axis = 0)
+    train_y = np.append(train_y, y)
+    n_ex.append(n_samples_per_task)
 
-#     print(n_ex)
-
-# print(train_x.shape)
-
-# n_ex = np.array(n_ex)
-# train_x =  train_x[1:, :]
-# train_y = train_y[1:, np.newaxis]
-
-# # Generate test tasks
-# test_x = np.zeros((1, n_predictors))
-# test_y = np.zeros(1)
-
-# for task in range (n_test_tasks):
-#     gamma_task = np.random.uniform(-1, 1)
-#     x1 = np.random.normal(0, sx1, (n_samples_per_task, 1))
-#     x3 = np.random.normal(0, sx3, (n_samples_per_task, 1))
-#     y = alpha[0]*x1 + alpha[1]*x3 + np.random.normal(0, sigma, (n_samples_per_task,1))
-
-#     x2 = gamma_task*y + np.random.normal(0,sx2,(n_samples_per_task,1))
-
-#     x_task = np.concatenate([x1, x2, x3],axis = 1)
-#     test_x = np.append(test_x, x_task, axis = 0)
-#     test_y = np.append(test_y, y)
-
-
-# test_x = test_x[1:,:]
-# test_y = test_y[1:,np.newaxis]
-
-import scipy.io
-
-data = scipy.io.loadmat('dataset.mat')
-
-train_x = data['train_x']
-train_y = data['train_y']
-test_x = data['test_x']
-test_y = data['test_y']
-n_ex = data['n_ex'].flatten()  # Flatten về vector 1D nếu cần
+    print(n_ex)
 
 print(train_x.shape)
-print(train_y.shape)
-print(test_x.shape)
-print(test_y.shape)
-print(n_ex)
+
+n_ex = np.array(n_ex)
+train_x =  train_x[1:, :]
+train_y = train_y[1:, np.newaxis]
+
+# Generate test tasks
+test_x = np.zeros((1, n_predictors))
+test_y = np.zeros(1)
+
+for task in range (n_test_tasks):
+    gamma_task = np.random.uniform(-1, 1)
+    x1 = np.random.normal(0, sx1, (n_samples_per_task, 1))
+    x3 = np.random.normal(0, sx3, (n_samples_per_task, 1))
+    y = alpha[0]*x1 + alpha[1]*x3 + np.random.normal(0, sigma, (n_samples_per_task,1))
+
+    x2 = gamma_task*y + np.random.normal(0,sx2,(n_samples_per_task,1))
+
+    x_task = np.concatenate([x1, x2, x3],axis = 1)
+    test_x = np.append(test_x, x_task, axis = 0)
+    test_y = np.append(test_y, y)
+
+
+test_x = test_x[1:,:]
+test_y = test_y[1:,np.newaxis]
+
+# import scipy.io
+
+# data = scipy.io.loadmat('dataset.mat')
+
+# train_x = data['train_x']
+# train_y = data['train_y']
+# test_x = data['test_x']
+# test_y = data['test_y']
+# n_ex = data['n_ex'].flatten()  # Flatten về vector 1D nếu cần
+
+# print(train_x.shape)
+# print(train_y.shape)
+# print(test_x.shape)
+# print(test_y.shape)
+# print(n_ex)
 
 
 s_hat = subset(train_x, train_y, n_ex, valid_split=0.5, 
