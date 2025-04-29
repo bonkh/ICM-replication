@@ -140,7 +140,7 @@ import time
 
 start_time = time.time()
 
-V, D, Z_train, Z_test = dica(Kx=Kx, Ky=Ky, Kt=Kt, groupIdx=domain_idx, lambd=lambda_, epsilon=epsilon, M=m)
+V, D, Z_train, Z_test = dica_gpu(Kx=Kx, Ky=Ky, Kt=Kt, groupIdx=domain_idx, lambd=lambda_, epsilon=epsilon, M=m)
 
 end_time = time.time()
 print(f"Execution time: {end_time - start_time:.4f} seconds")
