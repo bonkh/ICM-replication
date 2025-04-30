@@ -180,7 +180,11 @@ for rep in range(n_repeat):
     Kx = rbf_kernel(x_temp, x_temp, gamma=gamma_x)
     Ky = rbf_kernel(y_temp, y_temp, gamma=gamma_y)
     Kt = rbf_kernel(x_test, x_temp, gamma=gamma_x)
-    print(f'KT shape:   {Kt.shape}')
+
+    Kx = compute_rbf_kernel_blockwise(x_temp, x_temp, gamma=gamma_x)
+    Ky = compute_rbf_kernel_blockwise(y_temp, y_temp, gamma=gamma_y)
+    kt = compute_rbf_kernel_blockwise(x_test, x_temp, gamma=gamma_x)
+    # print(f'KT shape:   {Kt.shape}')
    
     N = x_temp.shape[0]
     unique_domains = np.unique(domain_idx)
