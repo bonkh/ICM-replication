@@ -183,7 +183,7 @@ for rep in range(n_repeat):
 
     Kx = compute_rbf_kernel_blockwise(x_temp, x_temp, gamma=gamma_x)
     Ky = compute_rbf_kernel_blockwise(y_temp, y_temp, gamma=gamma_y)
-    kt = compute_rbf_kernel_blockwise(x_test, x_temp, gamma=gamma_x)
+    Kt = compute_rbf_kernel_blockwise(x_test, x_temp, gamma=gamma_x)
     # print(f'KT shape:   {Kt.shape}')
    
     N = x_temp.shape[0]
