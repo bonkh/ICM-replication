@@ -1,4 +1,6 @@
 import numpy as np
+
+from sklearn.metrics.pairwise import rbf_kernel
 def get_color_dict():
 
   colors = {
@@ -60,3 +62,39 @@ def get_color_dict():
 def mse(model, x, y):
   return np.mean((model.predict(x)-y)**2)
 
+
+def compute_rbf_kernel_blockwise(X, Y=None, gamma=1.0, block_size=500, dtype=np.float32):
+    """
+    Compute RBF kernel in memory-efficient blockwise fashion.
+
+    Parameters
+    ----------
+    X : ndarray of shape (n_samples_X, n_features)
+        First input dataset.
+    Y : ndarray of shape (n_samples_Y, n_features), optional
+        Second input dataset. If None, Y = X.
+    gamma : float
+        RBF kernel coefficient.
+    block_size : int
+        Number of rows to compute per block.
+    dtype : np.dtype
+        Output dtype to control memory usage.
+
+    Returns
+    -------
+    K : ndarray of shape (n_samples_X, n_samples_Y)
+        Computed RBF kernel matrix.
+    """
+    if Y is None:
+        Y = X
+
+    n_X = X.shape[0]
+    n_Y = Y.shape[0]
+    K = np.empty((n_X, n_Y), dtype=dtype)
+
+    for i in range(0, n_X, block_size):
+        i_end = min(i + block_size, n_X)
+        Xi = X[i:i_end]
+        K[i:i_end] = rbf_kernel(Xi, Y, gamma=gamma).astype(dtype)
+
+    return K

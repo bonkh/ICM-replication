@@ -13,7 +13,7 @@ from sklearn.metrics import mean_squared_error
 
 np.random.seed(2025)
 
-n_samples_per_task = 300 # (n_examples_task)
+n_samples_per_task = 4000 # (n_examples_task)
 n_tasks = 3
 n_test_tasks = 10 #n_test_tasks = 100
 n_predictors = 3
@@ -37,62 +37,62 @@ delta = 0.05
 
 # Generate training tasks
 
-# for task in range(n_tasks):
-#     gamma_task = np.random.uniform(-1,1)
-#     x1 = np.random.normal(0, sx1, (n_samples_per_task, 1))
-#     x3 = np.random.normal(0, sx3, (n_samples_per_task, 1))
-#     y = alpha[0] * x1 + alpha[1] * x3 + np.random.normal(0, sigma, (n_samples_per_task, 1))
+for task in range(n_tasks):
+    gamma_task = np.random.uniform(-1,1)
+    x1 = np.random.normal(0, sx1, (n_samples_per_task, 1))
+    x3 = np.random.normal(0, sx3, (n_samples_per_task, 1))
+    y = alpha[0] * x1 + alpha[1] * x3 + np.random.normal(0, sigma, (n_samples_per_task, 1))
 
-#     x2 = gamma_task*y + np.random.normal(0, sx2, (n_samples_per_task, 1))
+    x2 = gamma_task*y + np.random.normal(0, sx2, (n_samples_per_task, 1))
 
-#     x_task = np.concatenate([x1, x2, x3],axis = 1)
-#     train_x = np.append(train_x, x_task, axis = 0)
-#     train_y = np.append(train_y, y)
-#     n_ex.append(n_samples_per_task)
+    x_task = np.concatenate([x1, x2, x3],axis = 1)
+    train_x = np.append(train_x, x_task, axis = 0)
+    train_y = np.append(train_y, y)
+    n_ex.append(n_samples_per_task)
 
-# #     print(n_ex)
+#     print(n_ex)
 
-# # print(train_x.shape)
+# print(train_x.shape)
 
-# n_ex = np.array(n_ex)
-# train_x =  train_x[1:, :]
-# train_y = train_y[1:, np.newaxis]
+n_ex = np.array(n_ex)
+train_x =  train_x[1:, :]
+train_y = train_y[1:, np.newaxis]
 
-# # Generate test tasks
-# test_x = np.zeros((1, n_predictors))
-# test_y = np.zeros(1)
+# Generate test tasks
+test_x = np.zeros((1, n_predictors))
+test_y = np.zeros(1)
 
-# for task in range (n_test_tasks):
-#     gamma_task = np.random.uniform(-1, 1)
-#     x1 = np.random.normal(0, sx1, (n_samples_per_task, 1))
-#     x3 = np.random.normal(0, sx3, (n_samples_per_task, 1))
-#     y = alpha[0]*x1 + alpha[1]*x3 + np.random.normal(0, sigma, (n_samples_per_task,1))
+for task in range (n_test_tasks):
+    gamma_task = np.random.uniform(-1, 1)
+    x1 = np.random.normal(0, sx1, (n_samples_per_task, 1))
+    x3 = np.random.normal(0, sx3, (n_samples_per_task, 1))
+    y = alpha[0]*x1 + alpha[1]*x3 + np.random.normal(0, sigma, (n_samples_per_task,1))
 
-#     x2 = gamma_task*y + np.random.normal(0,sx2,(n_samples_per_task,1))
+    x2 = gamma_task*y + np.random.normal(0,sx2,(n_samples_per_task,1))
 
-#     x_task = np.concatenate([x1, x2, x3],axis = 1)
-#     test_x = np.append(test_x, x_task, axis = 0)
-#     test_y = np.append(test_y, y)
+    x_task = np.concatenate([x1, x2, x3],axis = 1)
+    test_x = np.append(test_x, x_task, axis = 0)
+    test_y = np.append(test_y, y)
 
 
-# test_x = test_x[1:,:]
-# test_y = test_y[1:,np.newaxis]
+test_x = test_x[1:,:]
+test_y = test_y[1:,np.newaxis]
 
-import scipy.io
+# import scipy.io
 
-data = scipy.io.loadmat('dataset.mat')
+# data = scipy.io.loadmat('dataset.mat')
 
-train_x = data['train_x']
-train_y = data['train_y']
-test_x = data['test_x']
-test_y = data['test_y']
-n_ex = data['n_ex'].flatten()  # Flatten về vector 1D nếu cần
+# train_x = data['train_x']
+# train_y = data['train_y']
+# test_x = data['test_x']
+# test_y = data['test_y']
+# n_ex = data['n_ex'].flatten()  # Flatten về vector 1D nếu cần
 
-print(train_x.shape)
-print(train_y.shape)
-print(test_x.shape)
-print(test_y.shape)
-print(n_ex)
+# print(train_x.shape)
+# print(train_y.shape)
+# print(test_x.shape)
+# print(test_y.shape)
+# print(n_ex)
 
 
 s_hat = subset(train_x, train_y, n_ex, valid_split=0.5, 
@@ -114,10 +114,64 @@ print(test_x.shape)
 gamma_x = 1.0 / train_x.shape[1]  # Or tune
 gamma_y = 1.0
 
-Kx = rbf_kernel(train_x, train_x, gamma=gamma_x)
-Ky = rbf_kernel(train_y, train_y, gamma=gamma_y)
-Kt = rbf_kernel(test_x, train_x, gamma=gamma_x)
-print(f'KT shape:   {Kt.shape}')
+
+def compute_rbf_kernel_blockwise(X, Y=None, gamma=1.0, block_size=500, dtype=np.float32):
+    """
+    Compute RBF kernel in memory-efficient blockwise fashion.
+
+    Parameters
+    ----------
+    X : ndarray of shape (n_samples_X, n_features)
+        First input dataset.
+    Y : ndarray of shape (n_samples_Y, n_features), optional
+        Second input dataset. If None, Y = X.
+    gamma : float
+        RBF kernel coefficient.
+    block_size : int
+        Number of rows to compute per block.
+    dtype : np.dtype
+        Output dtype to control memory usage.
+
+    Returns
+    -------
+    K : ndarray of shape (n_samples_X, n_samples_Y)
+        Computed RBF kernel matrix.
+    """
+    if Y is None:
+        Y = X
+
+    n_X = X.shape[0]
+    n_Y = Y.shape[0]
+    K = np.empty((n_X, n_Y), dtype=dtype)
+
+    for i in range(0, n_X, block_size):
+        i_end = min(i + block_size, n_X)
+        Xi = X[i:i_end]
+        K[i:i_end] = rbf_kernel(Xi, Y, gamma=gamma).astype(dtype)
+
+    return K
+
+Kx1 = compute_rbf_kernel_blockwise(train_x, gamma=gamma_x)
+# Ky = rbf_kernel(train_y, train_y, gamma=gamma_y)
+Kt1 = compute_rbf_kernel_blockwise(test_x, train_x, gamma=gamma_x)
+
+# Kx2 = rbf_kernel(train_x, train_x, gamma=gamma_x)
+# # Ky = rbf_kernel(train_y, train_y, gamma=gamma_y)
+# Kt2 = rbf_kernel(test_x, train_x, gamma=gamma_x)
+# # print(f'Kx shape:   {Kx2.shape}')
+
+# # if np.array_equal(Kx1, Kx2):
+# if np.allclose(Kx1, Kx2, rtol=1e-5, atol=1e-7):
+#     print('equal')
+# else:
+#     print('not equal')
+
+# if np.allclose(Kt1, Kt2, rtol=1e-5, atol=1e-7):
+#     print('equal')
+# else:
+#     print('not equal')
+
+
 
 N = train_x.shape[0]
 unique_domains = np.unique(domain_idx)
