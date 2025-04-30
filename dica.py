@@ -4,6 +4,9 @@ from scipy.linalg import eigh
 from numpy.linalg import solve
 from scipy.io import loadmat
 from sklearn.metrics.pairwise import rbf_kernel
+from utils import *
+import gc
+
 
 
 def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
@@ -38,6 +41,10 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
     Xt : (M, Nt) ndarray
         Projection of test data.
     """
+
+    Kx = Kx.astype(np.float32)
+    Ky = Ky.astype(np.float32)
+
     N = Kx.shape[0]
     Nt = Kt.shape[0] if Kt is not None else 0
 
@@ -128,6 +135,8 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
     else:
         Xt = None
 
+    gc.collect()
+
     return V, D, X, Xt
 
 
@@ -139,9 +148,12 @@ def dica_projection(train_x, train_y, domain_idx, lambda_, epsilon, m, gamma_x=N
     gamma_y = gamma_y or 1.0
 
     # Compute input and output kernels
-    K = rbf_kernel(train_x, train_x, gamma=gamma_x)
+    K = compute_rbf_kernel_blockwise(train_x, train_x, gamma=gamma_x)
+# 
+    # K = rbf_kernel(train_x, train_x, gamma=gamma_x)
     if supervised:
-        L = rbf_kernel(train_y.reshape(-1, 1), train_y.reshape(-1, 1), gamma=gamma_y)
+        # L = rbf_kernel(train_y.reshape(-1, 1), train_y.reshape(-1, 1), gamma=gamma_y)
+        L = compute_rbf_kernel_blockwise(train_y.reshape(-1, 1), train_y.reshape(-1, 1), gamma=gamma_y)
     else:
         L = np.eye(N)
 
