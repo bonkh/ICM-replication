@@ -59,82 +59,75 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
     H = np.eye(N) - np.ones((N, N)) / N
 
     # Construct L matrix
-   
     L = np.zeros((N, N), dtype=np.float64)
-
     for i in range(N):
         for j in range(N):
             gi = groupIdx[i]
             gj = groupIdx[j]
             if gi == gj:
-                groupSize = NG[unique_groups == gi][0]  # chọn đúng giá trị
-                # print(groupSize)
+                groupSize = NG[unique_groups == gi][0]
                 L[i, j] = 1 / (G * groupSize**2) - 1 / (G**2 * groupSize**2)
             else:
                 groupSize_i = NG[unique_groups == gi][0]
                 groupSize_j = NG[unique_groups == gj][0]
                 L[i, j] = -1 / (G**2 * groupSize_i * groupSize_j)
 
+    del groupIdx, unique_groups, NG
+    gc.collect()
+
     # Center kernel matrices
     Ky = H @ Ky @ H
     Kx = H @ Kx @ H
+    del H
+    gc.collect()
     
     # Matrix A
     # A_left
     A_left = Kx @ L @ Kx + Kx + lambd * np.eye(N)
+    del L
+    gc.collect()
 
-    # A_right
-    mid = solve(Ky + N * epsilon * np.eye(N), Kx @ Kx)
+    Ky_eps = Ky + N * epsilon * np.eye(N)
+    mid = solve(Ky_eps, Kx @ Kx)
+    del Ky_eps
+
     A_right = Ky @ mid
+    del mid
+    del Ky
+    gc.collect()
+
     A = solve(A_left, A_right)
-
-    # data = loadmat('A.mat')
-    # L_matlab = data['A']  # Ma trận L từ MATLAB
-    # is_close = np.allclose(A, L_matlab, atol=1e-8)
-    # print(A)
-    # print("Hai ma trận giống nhau không?", is_close)
-
-    # Eigendecomposition
-    # eigvals, eigvecs = eigs(A, k=M)
-    # eigvals, eigvecs = eigh(A)
-    # eigvals = eigvals[-M:]
-    # eigvecs = eigvecs[:, -M:]
-    # # eigvals = np.real(eigvals)
-    # # eigvecs = np.real(eigvecs)
-
-    # # Normalize eigenvectors
-    # for i in range(M):
-    #     eigvecs[:, i] /= np.sqrt(eigvals[i])
+    del A_left, A_right
+    gc.collect()
 
     eigvals, eigvecs = eigs(A, k=M)
+    del A
 
-    # Chuyển sang thực (nếu cần)
     eigvals = np.real(eigvals)
     eigvecs = np.real(eigvecs)
 
-    # Chuẩn hóa từng vector riêng
     for i in range(M):
         eigvecs[:, i] /= np.sqrt(eigvals[i])
+    gc.collect()
 
-    # Nếu bạn cần tương đương V, D:
     V = eigvecs
     D = np.diag(eigvals)
+    del eigvecs, eigvals
+    gc.collect()
 
 
-    # Project training data
-
-    # print(f'VT: {V.T.shape}')
-    # print(f'Kxc: {Kx_c.shape}')
     X = V.T @ Kx
+    del Kx
+    gc.collect()
 
-    # Project test data if available
     if Kt is not None and Nt > 0:
         Ht = np.eye(Nt) - np.ones((Nt, Nt)) / Nt
         Kt_c = Ht @ Kt @ H
         Xt = V.T @ Kt_c.T
+        del Ht, Kt_c
     else:
         Xt = None
-
+    del Kt
     gc.collect()
 
     return V, D, X, Xt
