@@ -78,8 +78,8 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
     # Center kernel matrices
     Ky = H @ Ky @ H
     Kx = H @ Kx @ H
-    del H
-    gc.collect()
+    # del H
+    # gc.collect()
     
     # Matrix A
     # A_left
