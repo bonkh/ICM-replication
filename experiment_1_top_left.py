@@ -177,9 +177,9 @@ for rep in range(n_repeat):
 
     print(x_temp.shape )
 
-    Kx = rbf_kernel(x_temp, x_temp, gamma=gamma_x)
-    Ky = rbf_kernel(y_temp, y_temp, gamma=gamma_y)
-    Kt = rbf_kernel(x_test, x_temp, gamma=gamma_x)
+    # Kx = rbf_kernel(x_temp, x_temp, gamma=gamma_x)
+    # Ky = rbf_kernel(y_temp, y_temp, gamma=gamma_y)
+    # Kt = rbf_kernel(x_test, x_temp, gamma=gamma_x)
 
     Kx = compute_rbf_kernel_blockwise(x_temp, x_temp, gamma=gamma_x)
     Ky = compute_rbf_kernel_blockwise(y_temp, y_temp, gamma=gamma_y)
