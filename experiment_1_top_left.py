@@ -188,15 +188,6 @@ for rep in range(n_repeat):
    
     N = x_temp.shape[0]
     unique_domains = np.unique(domain_idx)
-    # print(n_ex)
-
-    # Q = np.zeros((N, N))
-
-    # for d in unique_domains:
-    #     idx = np.where(domain_idx == d)[0]
-    #     nd = len(idx)
-    #     Q[np.ix_(idx, idx)] += 1.0 / nd
-    # Q /= len(unique_domains)
     lambda_ = 1e-3
     epsilon = 1e-3
     m = 2
