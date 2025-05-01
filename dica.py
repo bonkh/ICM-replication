@@ -111,8 +111,21 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
     del eigvecs, eigvals
     gc.collect()
 
+    # start = get_memory_usage_gb()
+    block_size = 500
+    # X_2 = V.T @ Kx
+    # end = get_memory_usage_gb()
+    # print(f"RAM Used: {end - start:.2f} GB") 
 
-    X = V.T @ Kx
+    X = np.empty((M, N), dtype=np.float32)
+    for i in range(0, N, block_size):
+        i_end = min(i + block_size, N)
+        X[:, i:i_end] = V.T @ Kx[:, i:i_end]
+
+    # are_equal = np.allclose(X_1, X_2, rtol=1e-5, atol=1e-8)
+
+    # print("Kx_1 and Kx_2 are equal:", are_equal)
+        
     del Kx
     gc.collect()
 
@@ -125,10 +138,6 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
         Xt = None
     del Kt
     gc.collect()
-
-    end = get_memory_usage_gb()
-    print(f"RAM Used: {end - start:.2f} GB") 
-
     return V, D, X, Xt
 
 

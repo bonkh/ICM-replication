@@ -60,16 +60,16 @@ alpha_test = float(args.alpha_test)
 use_hsic = bool(int(args.use_hsic))
 
 dataset = gauss_tl(n_task, n, p, p_s, p_conf, eps ,g, lambd, lambd_test)
-x_train = dataset.train['x_train']
-y_train = dataset.train['y_train']
+x_train = dataset.train['x_train'].astype(np.float32)
+y_train = dataset.train['y_train'].astype(np.float32)
 n_ex = dataset.train['n_ex']
 
 lr = linear_model.LinearRegression()
 lr.fit(x_train, y_train)
 
 # Define test
-x_test = dataset.test['x_test']
-y_test = dataset.test['y_test']
+x_test = dataset.test['x_test'].astype(np.float32)
+y_test = dataset.test['y_test'].astype(np.float32)
 
 n_train_tasks = np.arange(2, n_task)
 n_repeat = int(args.n_repeat)
@@ -216,14 +216,17 @@ for rep in range(n_repeat):
     gamma_x = 1.0 / x_temp.shape[1]
     gamma_y = 1.0
 
-    # Kx_1 = rbf_kernel(x_temp, x_temp, gamma=gamma_x)
+    # Kx = rbf_kernel(x_temp, x_temp, gamma=gamma_x)
     # Ky = rbf_kernel(y_temp, y_temp, gamma=gamma_y)
     # Kt = rbf_kernel(x_test, x_temp, gamma=gamma_x)
     
-    # Kx_1 = compute_rbf_kernel_blockwise(x_temp, x_temp, gamma=gamma_x)
-
+    # Kx = compute_rbf_kernel_blockwise(x_temp, x_temp, gamma=gamma_x)
     # Ky = compute_rbf_kernel_blockwise(y_temp, y_temp, gamma=gamma_y)
     # Kt = compute_rbf_kernel_blockwise(x_test, x_temp, gamma=gamma_x)
+
+    # end = get_memory_usage_gb()
+    # print(f"RAM Used for data: {end - start:.2f} GB")  
+    
     Kx_path = os.path.join(save_dir, 'Kx.dat')
     Ky_path = os.path.join(save_dir, 'Ky.dat')
     Kt_path = os.path.join(save_dir, 'Kt.dat')
@@ -240,10 +243,10 @@ for rep in range(n_repeat):
 
     # print("Kx_1 and Kx_2 are equal:", are_equal)
 
-    # print(Kx.shape)
+    # print(Kx[2:4,5:6])
 
     # end = get_memory_usage_gb()
-    # print(f"RAM Used: {end - start:.2f} GB")  
+    # print(f"RAM Used for data: {end - start:.2f} GB")  
   
     # print(f'KT shape:   {Kt.shape}')
    
