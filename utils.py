@@ -1,6 +1,20 @@
 import numpy as np
 
+from sklearn import linear_model
 from sklearn.metrics.pairwise import rbf_kernel
+import psutil
+import os
+def train_linear_and_eval(x, y, x_test, y_test):
+    model = linear_model.LinearRegression()
+    model.fit(x, y)
+    result = mse(model, x_test, y_test)
+    return result
+
+
+def get_memory_usage_gb():
+    process = psutil.Process(os.getpid())
+    return process.memory_info().rss / 1024**3  # In MB
+
 def get_color_dict():
 
   colors = {

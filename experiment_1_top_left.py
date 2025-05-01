@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--save_dir', default = 'Experiment_01_top_left')
 parser.add_argument('--n_task', default=7)
 parser.add_argument('--merge_dica', default=0)
-parser.add_argument('--n', default=4000)
+parser.add_argument('--n', default=400)
 parser.add_argument('--p', default = 6)
 parser.add_argument('--p_s', default = 3)
 parser.add_argument('--p_conf', default = 1)
@@ -94,6 +94,9 @@ for m in methods:
 
 for rep in range(n_repeat):
   print (f'******** REPEAT: {rep}**********') 
+  start = get_memory_usage_gb()
+    
+ 
   x_train, y_train = dataset.resample(n_task, n)
 
   x_test = dataset.test['x_test']
@@ -103,19 +106,26 @@ for rep in range(n_repeat):
     x_temp = x_train[0:np.cumsum(n_ex)[t], :]
     y_temp = y_train[0:np.cumsum(n_ex)[t], :]
 
+    print (f'***** Loop: {t}******')
+    print (f'X_train shape: {x_temp.shape}')
     
 
 
     # ************** 1. Pooled *********************
-    lr_temp = linear_model.LinearRegression()
-    lr_temp.fit(x_temp, y_temp)
-    results['pool'][rep, index] = mse(lr_temp, x_test, y_test)
+    print(f'1. Pooling the data')
+    # lr_temp = linear_model.LinearRegression()
+    # lr_temp.fit(x_temp, y_temp)
+    results['pool'][rep, index] = train_linear_and_eval(x_temp, y_temp, x_test, y_test)
+    # mse(lr_temp, x_test, y_test)
+
 
     # *************** 2. Mean ************
+    print (f'2. Mean prediction')
     error_mean = np.mean((y_test - np.mean(y_temp)) ** 2)
     results['mean'][rep, index] = error_mean
 
     # ************* 3. Estimated S_hat ***********
+    print (f'3. Subset search')
 
     if p<10:
       s_hat = subset_search.subset(x_temp, y_temp, n_ex[0:t], 
@@ -131,7 +141,11 @@ for rep in range(n_repeat):
       else:
         results['shat'][rep,index] = error_mean
 
+      del lr_s_temp
+      gc.collect()
+
     # ************** 4. Estimated greedy S ******************
+    print(f'4. Greedy subset search')
     s_greedy = subset_search.greedy_subset(x_temp, y_temp, n_ex[0:t], 
                                            delta=alpha_test, 
                                            valid_split=0.8, 
@@ -141,15 +155,24 @@ for rep in range(n_repeat):
       lr_sg_temp = linear_model.LinearRegression()
       lr_sg_temp.fit(x_temp[:,s_greedy], y_temp)
       results['sgreed'][rep, index] = mse(lr_sg_temp, x_test[:,s_greedy], y_test)
+
+      del lr_sg_temp
+      gc.collect()
     else:
       results['sgreed'][rep, index] = error_mean
 
+
     # ************ 5. True S **************
+    print(f'5. True causal predictor')
     lr_true_temp = linear_model.LinearRegression()
     lr_true_temp.fit(x_temp[:,true_s], y_temp)
     results['strue'][rep, index] = mse(lr_true_temp,x_test[:,true_s], y_test)
 
+    del lr_true_temp
+    gc.collect()
+
     # ************ 6. mSDA *************
+    print(f'6. mSDA')
     p_linsp = np.linspace(0,1,10)
     p_cv = mSDA_cv(p_linsp, x_temp, y_temp, n_cv = t)
     fit_sda = mSDA(x_temp.T,p_cv,1)
@@ -161,10 +184,12 @@ for rep in range(n_repeat):
     lr_sda.fit(x_sda, y_temp)
     results['msda'][rep, index] = utils.mse(lr_sda, x_test_sda, y_test)
 
-    print(f'6. MSDA')
+    del lr_sda
+    gc.collect()
 
     # *********** 7. DICA ********
     print (f'7. DICA')
+    
     domain_idx = []
 
     for domain, n in enumerate(n_ex):
@@ -175,8 +200,6 @@ for rep in range(n_repeat):
     gamma_x = 1.0 / x_temp.shape[1]
     gamma_y = 1.0
 
-    print(x_temp.shape )
-
     # Kx = rbf_kernel(x_temp, x_temp, gamma=gamma_x)
     # Ky = rbf_kernel(y_temp, y_temp, gamma=gamma_y)
     # Kt = rbf_kernel(x_test, x_temp, gamma=gamma_x)
@@ -184,6 +207,7 @@ for rep in range(n_repeat):
     Kx = compute_rbf_kernel_blockwise(x_temp, x_temp, gamma=gamma_x)
     Ky = compute_rbf_kernel_blockwise(y_temp, y_temp, gamma=gamma_y)
     Kt = compute_rbf_kernel_blockwise(x_test, x_temp, gamma=gamma_x)
+    
     # print(f'KT shape:   {Kt.shape}')
    
     N = x_temp.shape[0]
@@ -199,7 +223,17 @@ for rep in range(n_repeat):
 
     reg_dica = linear_model.LinearRegression()
     reg_dica.fit(Z_train, y_temp)
-    results['dica'][rep, index] = utils.mse(reg_dica, Z_test, y_test)                
+    results['dica'][rep, index] = utils.mse(reg_dica, Z_test, y_test) 
+
+    del reg_dica
+    del x_temp, y_temp, Kx, Ky, Kt, V, D, Z_train, Z_test
+    gc.collect()
+
+  del x_train, y_train, x_test, y_test
+  gc.collect()
+  end = get_memory_usage_gb()
+  print(f"RAM Used: {end - start:.2f} MB")  
+                 
 
 save_all = {}
 save_all['results'] = results
