@@ -43,6 +43,7 @@ if not os.path.exists(save_dir):
 # if not os.path.exists(save_dir):
 #   os.makedirs(save_dir)
 
+
 n_task = int(args.n_task)
 n = int(args.n)
 
@@ -94,21 +95,36 @@ for m in methods:
 
 for rep in range(n_repeat):
   print (f'******** REPEAT: {rep}**********') 
-  start = get_memory_usage_gb()
+
     
  
   x_train, y_train = dataset.resample(n_task, n)
+  # print(x_train.shape)
+  # x_train_path = os.path.join(save_dir, 'x_train.dat')
+  # y_train_path = os.path.join(save_dir, 'y_train.dat')
+  # np.memmap(x_train_path, dtype='float32', mode='w+', shape=x_train.shape)[:] = x_train.astype('float32')
+  # np.memmap(y_train_path, dtype='float32', mode='w+', shape=y_train.shape)[:] = y_train.astype('float32')
+
+
+
 
   x_test = dataset.test['x_test']
   y_test = dataset.test['y_test']
+
+  # Load from disk without reading everything into memory
+  # x_train = np.memmap(x_train_path, dtype='float32', mode='r', shape=(n_task * n, p))
+  # y_train = np.memmap(y_train_path, dtype='float32', mode='r', shape=(n_task * n, 1))
+  # end = get_memory_usage_gb()
+  # print(f"RAM Used: {end - start:.2f} MB")  
+
 
   for index, t in np.ndenumerate(n_train_tasks):
     x_temp = x_train[0:np.cumsum(n_ex)[t], :]
     y_temp = y_train[0:np.cumsum(n_ex)[t], :]
 
-    print (f'***** Loop: {t}******')
+    print (f'***** Number of tasks used: {t}******')
     print (f'X_train shape: {x_temp.shape}')
-    
+    start = get_memory_usage_gb()
 
 
     # ************** 1. Pooled *********************
@@ -200,14 +216,35 @@ for rep in range(n_repeat):
     gamma_x = 1.0 / x_temp.shape[1]
     gamma_y = 1.0
 
-    # Kx = rbf_kernel(x_temp, x_temp, gamma=gamma_x)
+    # Kx_1 = rbf_kernel(x_temp, x_temp, gamma=gamma_x)
     # Ky = rbf_kernel(y_temp, y_temp, gamma=gamma_y)
     # Kt = rbf_kernel(x_test, x_temp, gamma=gamma_x)
-
-    Kx = compute_rbf_kernel_blockwise(x_temp, x_temp, gamma=gamma_x)
-    Ky = compute_rbf_kernel_blockwise(y_temp, y_temp, gamma=gamma_y)
-    Kt = compute_rbf_kernel_blockwise(x_test, x_temp, gamma=gamma_x)
     
+    # Kx_1 = compute_rbf_kernel_blockwise(x_temp, x_temp, gamma=gamma_x)
+
+    # Ky = compute_rbf_kernel_blockwise(y_temp, y_temp, gamma=gamma_y)
+    # Kt = compute_rbf_kernel_blockwise(x_test, x_temp, gamma=gamma_x)
+    Kx_path = os.path.join(save_dir, 'Kx.dat')
+    Ky_path = os.path.join(save_dir, 'Ky.dat')
+    Kt_path = os.path.join(save_dir, 'Kt.dat')
+
+    Kx = compute_rbf_kernel_blockwise_to_memmap(x_temp, x_temp, gamma=gamma_x, mmap_path=Kx_path)
+    Ky = compute_rbf_kernel_blockwise_to_memmap(y_temp, y_temp, gamma=gamma_y, mmap_path=Ky_path)
+    Kt = compute_rbf_kernel_blockwise_to_memmap(x_test, x_temp, gamma=gamma_x, mmap_path=Kt_path)
+    N = x_temp.shape[0]
+    Kx = np.memmap(Kx_path, dtype='float32', mode='r', shape=(N, N))
+    Ky = np.memmap(Ky_path, dtype='float32', mode='r', shape=(N, N))
+    Kt = np.memmap(Kt_path, dtype='float32', mode='r', shape=(x_test.shape[0], N))
+
+    # are_equal = np.allclose(Kx_1, Kx_2, rtol=1e-5, atol=1e-8)
+
+    # print("Kx_1 and Kx_2 are equal:", are_equal)
+
+    # print(Kx.shape)
+
+    # end = get_memory_usage_gb()
+    # print(f"RAM Used: {end - start:.2f} GB")  
+  
     # print(f'KT shape:   {Kt.shape}')
    
     N = x_temp.shape[0]
