@@ -5,7 +5,7 @@ import itertools
 
 def mat_hsic(X,n_samples_per_task):
 
-    print(n_samples_per_task)
+    # print(n_samples_per_task)
     task_boundaries = np.cumsum(n_samples_per_task)
     domains = np.zeros((np.sum(n_samples_per_task),np.sum(n_samples_per_task)))
     #Here the man of domains matrix can be 900x900 = num of samples x num of samples
@@ -111,7 +111,7 @@ def split_train_valid(x, y, n_samples_per_task_list, valid_split=0.2):
 
     task_boundaries = np.append(0, np.cumsum(n_samples_per_task_list).astype(int))
 # n_ex_cumsum
-    print(task_boundaries)
+    # print(task_boundaries)
     # Example: [0, 300, 600, 900].
     # This list show the boundaries for each tasks
 
@@ -120,7 +120,7 @@ def split_train_valid(x, y, n_samples_per_task_list, valid_split=0.2):
 
     for i in range(len(n_samples_per_task_list)): # Means for each task
         n_train_task = int((1 - valid_split) * n_samples_per_task_list[i])
-        print(n_train_task)
+        # print(n_train_task)
         # print(x[0.0])
 
         train_x.append( x[task_boundaries[i] : task_boundaries[i] + n_train_task])
@@ -283,7 +283,7 @@ def subset(x, y, n_samples_per_task_list, delta, valid_split, use_hsic = False,
 
     train_x, train_y, valid_x, valid_y, n_ex_train, n_ex_valid = split_train_valid(x, y, n_samples_per_task_list, valid_split)
 
-    print(n_ex_valid)
+    # print(n_ex_valid)
     
     subset = full_search(train_x, train_y, valid_x, valid_y,
                          n_ex_train, n_ex_valid, use_hsic, 

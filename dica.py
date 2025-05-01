@@ -41,7 +41,7 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
     Xt : (M, Nt) ndarray
         Projection of test data.
     """
-
+    start = get_memory_usage_gb()
     Kx = Kx.astype(np.float32)
     Ky = Ky.astype(np.float32)
 
@@ -78,11 +78,7 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
     # Center kernel matrices
     Ky = H @ Ky @ H
     Kx = H @ Kx @ H
-    # del H
-    # gc.collect()
     
-    # Matrix A
-    # A_left
     A_left = Kx @ L @ Kx + Kx + lambd * np.eye(N)
     del L
     gc.collect()
@@ -129,6 +125,9 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
         Xt = None
     del Kt
     gc.collect()
+
+    end = get_memory_usage_gb()
+    print(f"RAM Used: {end - start:.2f} GB") 
 
     return V, D, X, Xt
 
