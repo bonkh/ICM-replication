@@ -1,0 +1,11 @@
+**/*.dat
+../*.pkl
+Experiment_01_top_left/*.dat
+
+.DS_Store
+__pycache__/
+*.pyc
+
+*.dat
+*.pkl
+*.pdf
