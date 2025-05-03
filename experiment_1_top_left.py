@@ -216,16 +216,6 @@ for rep in range(n_repeat):
     gamma_x = 1.0 / x_temp.shape[1]
     gamma_y = 1.0
 
-    # Kx = rbf_kernel(x_temp, x_temp, gamma=gamma_x)
-    # Ky = rbf_kernel(y_temp, y_temp, gamma=gamma_y)
-    # Kt = rbf_kernel(x_test, x_temp, gamma=gamma_x)
-    
-    # Kx = compute_rbf_kernel_blockwise(x_temp, x_temp, gamma=gamma_x)
-    # Ky = compute_rbf_kernel_blockwise(y_temp, y_temp, gamma=gamma_y)
-    # Kt = compute_rbf_kernel_blockwise(x_test, x_temp, gamma=gamma_x)
-
-    # end = get_memory_usage_gb()
-    # print(f"RAM Used for data: {end - start:.2f} GB")  
     Kx_path = os.path.join(save_dir, 'Kx.dat')
     Ky_path = os.path.join(save_dir, 'Ky.dat')
     Kt_path = os.path.join(save_dir, 'Kt.dat')
@@ -238,24 +228,22 @@ for rep in range(n_repeat):
     Ky = np.memmap(Ky_path, dtype='float32', mode='r', shape=(N, N))
     Kt = np.memmap(Kt_path, dtype='float32', mode='r', shape=(x_test.shape[0], N))
 
-    # are_equal = np.allclose(Kx_1, Kx_2, rtol=1e-5, atol=1e-8)
-
-    # print("Kx_1 and Kx_2 are equal:", are_equal)
-
-    # print(Kx[2:4,5:6])
-
-    # end = get_memory_usage_gb()
-    # print(f"RAM Used for data: {end - start:.2f} GB")  
   
-    # print(f'KT shape:   {Kt.shape}')
-   
     N = x_temp.shape[0]
     unique_domains = np.unique(domain_idx)
     lambda_ = 1e-3
     epsilon = 1e-3
     m = 2
 
-    V, D, Z_train, Z_test = dica(Kx=Kx, Ky=Ky, Kt=Kt , groupIdx=domain_idx, lambd=lambda_, epsilon=epsilon, M=m)
+    V, D, Z_train, Z_test = dica_torch(
+    Kx_np=Kx, 
+    Ky_np=Ky, 
+    Kt_np=Kt, 
+    groupIdx_np=domain_idx, 
+    lambd=lambda_, 
+    epsilon=epsilon, 
+    M=m
+    )
 
     Z_train = Z_train.T
     Z_test = Z_test.T
@@ -268,12 +256,12 @@ for rep in range(n_repeat):
     del x_temp, y_temp, Kx, Ky, Kt, V, D, Z_train, Z_test
     gc.collect()
     end = get_memory_usage_gb()
-    print(f"RAM Used: {end - start:.2f} MB")  
+    print(f"RAM Used: {end - start:.2f} GB")  
 
   del x_train, y_train, x_test, y_test
   gc.collect()
   end = get_memory_usage_gb()
-  print(f"RAM Used: {end - start:.2f} MB")  
+  print(f"RAM Used: {end - start:.2f} GB")  
                  
 
 save_all = {}

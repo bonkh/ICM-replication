@@ -88,36 +88,13 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
     lambd=0.01,
     block_size=512 
     )
-    # A_left = np.memmap(A_left_path, dtype='float32', mode='r', shape=(N, N))
- 
+
     del L
     gc.collect()
-
-
-    # Ky_eps = Ky + N * epsilon * np.eye(N)
- 
 
     Ky_eps = Ky.copy()
     Ky_eps[np.diag_indices_from(Ky_eps)] += N * epsilon
 
-    # start = get_memory_usage_gb()
-    # mid1 = solve(Ky_eps, Kx @ Kx)
-    # end = get_memory_usage_gb()
-    # print(f'time1 = {end-start}')
-
-    # start = get_memory_usage_gb()
-    # mid = np.empty_like(Kx, dtype=Kx.dtype)
-    # block_size = 512  # adjust based on available RAM
-
-    # for i in range(0, N, block_size):
-    #     i_end = min(i + block_size, N)
-        
-    #     # Compute right-hand side block: (Kx @ Kx[:, i:i_end])
-    #     rhs_block = Kx @ Kx[:, i_end-block_size:i_end]
-
-    #     # Solve Ky_eps @ x = rhs_block
-    #     mid[:, i_end-block_size:i_end] = solve(Ky_eps, rhs_block)
-    # del Ky_eps
 
     mid_path = "Experiment_01_top_left/mid.dat"
     mid = np.memmap(mid_path, dtype=Kx.dtype, mode='w+', shape=(N, N))
@@ -137,10 +114,6 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
 
     del Ky_eps, rhs_block
     gc.collect()
-    # end = get_memory_usage_gb()
-    # print(f'time2 = {end-start}')
-    # are_equal = np.allclose(mid, mid1 , rtol=1e-4, atol=1e-6)
-    # print("Are equal ?:", are_equal)
 
     mid = np.memmap(mid_path, dtype=np.float32, mode='r', shape=(N, N))
     # A_right_1 = Ky @ mid
@@ -152,13 +125,6 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
         out_path=A_right_path,
         N=N
     )
-    # A_right = np.memmap(A_right_path, dtype=np.float32, mode='r', shape=(N, N))
-    # are_equal = np.allclose(A_right, A_right_1 , rtol=1e-4, atol=1e-6)
-    # print("Are equal ?:", are_equal)
-
-    # print("Max abs error:", np.mean(np.abs(A_right - A_right_1)))
-
-
 
     del mid
     del Ky
@@ -176,14 +142,6 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
         block_size=512  # adjust if needed
     )
     A = np.memmap(A_path, dtype=np.float32, mode='r', shape=(N, N))
-
-    # are_equal = np.allclose(A, A1 , rtol=1e-4, atol=1e-6)
-    # print("Are equal ?:", are_equal)
-
-    # print("Max abs error:", np.mean(np.abs(A - A1)))
-
-   
-
 
     # del A_left, A_right
     gc.collect()
@@ -237,7 +195,6 @@ def dica_projection(train_x, train_y, domain_idx, lambda_, epsilon, m, gamma_x=N
 # 
     # K = rbf_kernel(train_x, train_x, gamma=gamma_x)
     if supervised:
-        # L = rbf_kernel(train_y.reshape(-1, 1), train_y.reshape(-1, 1), gamma=gamma_y)
         L = compute_rbf_kernel_blockwise(train_y.reshape(-1, 1), train_y.reshape(-1, 1), gamma=gamma_y)
     else:
         L = np.eye(N)
@@ -273,16 +230,75 @@ def project_kernel(K, B):
 def project_test_kernel(Kt, B, K_train):
     """Project test kernel using B and K."""
     return Kt @ B @ B.T @ K_train
- # Construct L matrix
-    # L = np.zeros((N, N), dtype=np.float64)
-    # for i in range(N):
-    #     for j in range(N):
-    #         gi = groupIdx[i]
-    #         gj = groupIdx[j]
-    #         if gi == gj:
-    #             groupSize = NG[unique_groups == gi][0]
-    #             L[i, j] = 1 / (G * groupSize**2) - 1 / (G**2 * groupSize**2)
-    #         else:
-    #             groupSize_i = NG[unique_groups == gi][0]
-    #             groupSize_j = NG[unique_groups == gj][0]
-    #             L[i, j] = -1 / (G**2 * groupSize_i * groupSize_j)
+
+import torch
+import gc
+
+def dica_torch(Kx_np, Ky_np, Kt_np, groupIdx_np, lambd, epsilon, M):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Convert NumPy inputs to GPU tensors
+    Kx = torch.tensor(Kx_np, dtype=torch.float32, device=device)
+    Ky = torch.tensor(Ky_np, dtype=torch.float32, device=device)
+    groupIdx = torch.tensor(groupIdx_np, dtype=torch.int64, device=device)
+
+    N = Kx.shape[0]
+    Nt = Kt_np.shape[0] if Kt_np is not None else 0
+    Kt = torch.tensor(Kt_np, dtype=torch.float32, device=device) if Kt_np is not None else None
+
+    # Centering matrix H
+    I = torch.eye(N, device=device)
+    H = I - torch.ones((N, N), device=device) / N
+
+    # Build L matrix
+    unique_groups = torch.unique(groupIdx)
+    G = len(unique_groups)
+    NG = torch.stack([(groupIdx == g).sum() for g in unique_groups])
+
+    L = torch.zeros((N, N), device=device)
+    for i in range(N):
+        for j in range(N):
+            gi, gj = groupIdx[i], groupIdx[j]
+            if gi == gj:
+                g_size = NG[unique_groups == gi]
+                L[i, j] = 1 / (G * g_size**2) - 1 / (G**2 * g_size**2)
+            else:
+                g_i = NG[unique_groups == gi]
+                g_j = NG[unique_groups == gj]
+                L[i, j] = -1 / (G**2 * g_i * g_j)
+
+    del groupIdx, unique_groups, NG
+    gc.collect()
+
+    # Center Kx and Ky
+    Kx = H @ Kx @ H
+    Ky = H @ Ky @ H
+
+    A_left = Kx @ L @ Kx + Kx + lambd * torch.eye(N, device=device)
+    Ky_eps = Ky + N * epsilon * torch.eye(N, device=device)
+    mid = torch.linalg.solve(Ky_eps, Kx @ Kx)
+    A_right = Ky @ mid
+
+    # Solve final system
+    A = torch.linalg.solve(A_left, A_right)
+
+    # Eigen decomposition (use eigh if A is symmetric)
+    eigvals, eigvecs = torch.linalg.eigh(A)
+    eigvals = eigvals[-M:]
+    eigvecs = eigvecs[:, -M:]
+
+    for i in range(M):
+        eigvecs[:, i] /= torch.sqrt(eigvals[i])
+
+    V = eigvecs
+    D = torch.diag(eigvals)
+    X = V.T @ Kx
+
+    if Kt is not None and Nt > 0:
+        Ht = torch.eye(Nt, device=device) - torch.ones((Nt, Nt), device=device) / Nt
+        Kt_c = Ht @ Kt @ H
+        Xt = V.T @ Kt_c.T
+    else:
+        Xt = None
+
+    return V.cpu().numpy(), D.cpu().numpy(), X.cpu().numpy(), Xt.cpu().numpy() if Xt is not None else None
