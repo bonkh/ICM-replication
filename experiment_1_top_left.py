@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--save_dir', default = 'Experiment_01_top_left')
 parser.add_argument('--n_task', default=7)
 parser.add_argument('--merge_dica', default=0)
-parser.add_argument('--n', default=4000)
+parser.add_argument('--n', default=400)
 parser.add_argument('--p', default = 6)
 parser.add_argument('--p_s', default = 3)
 parser.add_argument('--p_conf', default = 1)
@@ -226,7 +226,6 @@ for rep in range(n_repeat):
 
     # end = get_memory_usage_gb()
     # print(f"RAM Used for data: {end - start:.2f} GB")  
-
     Kx_path = os.path.join(save_dir, 'Kx.dat')
     Ky_path = os.path.join(save_dir, 'Ky.dat')
     Kt_path = os.path.join(save_dir, 'Kt.dat')
