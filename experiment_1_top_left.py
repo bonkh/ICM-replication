@@ -267,8 +267,12 @@ for rep in range(n_repeat):
     #   M = m
     #   )
 
-    Z_train = Z_train.T
-    Z_test = Z_test.T
+    # Z_train = Z_train.T
+    # Z_test = Z_test.T
+
+    Z_train = Z_train.T.cpu().numpy()
+    Z_test = Z_test.T.cpu().numpy()
+
 
     reg_dica = linear_model.LinearRegression()
     reg_dica.fit(Z_train, y_temp)
