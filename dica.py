@@ -226,10 +226,11 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Convert NumPy inputs to GPU tensors
-    Kx = torch.from_numpy(np.memmap(Kx_path, dtype=dtype, mode='r', shape=(N, N))).to(device)
-    Ky = torch.from_numpy(np.memmap(Ky_path, dtype=dtype, mode='r', shape=(N, N))).to(device)
-    Kt = torch.from_numpy(np.memmap(Kt_path, dtype=dtype, mode='r', shape=(Nt, N))).to(device)
-    groupIdx = torch.from_numpy(np.memmap(groupIdx_path, dtype='int32', mode='r', shape=(N,))).to(device)
+    Kx = torch.from_numpy(np.memmap(Kx_path, dtype=dtype, mode='r', shape=(N, N)).copy()).to(device)
+
+    Ky = torch.from_numpy(np.memmap(Ky_path, dtype=dtype, mode='r', shape=(N, N)).copy()).to(device)
+    Kt = torch.from_numpy(np.memmap(Kt_path, dtype=dtype, mode='r', shape=(Nt, N)).copy()).to(device)
+    groupIdx = torch.from_numpy(np.memmap(groupIdx_path, dtype='int32', mode='r', shape=(N,)).copy()).to(device)
    
     Nt = Kt.shape[0] if Kt is not None else 0
 
@@ -241,21 +242,39 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     unique_groups = torch.unique(groupIdx)
     G = len(unique_groups)
     NG = torch.stack([(groupIdx == g).sum() for g in unique_groups])
+    group_counts = torch.stack([(groupIdx == g).sum() for g in unique_groups])
 
-    L = torch.zeros((N, N), device=device)
-    for i in range(N):
-        for j in range(N):
-            gi, gj = groupIdx[i], groupIdx[j]
-            if gi == gj:
-                g_size = NG[unique_groups == gi]
-                L[i, j] = 1 / (G * g_size**2) - 1 / (G**2 * g_size**2)
-            else:
-                g_i = NG[unique_groups == gi]
-                g_j = NG[unique_groups == gj]
-                L[i, j] = -1 / (G**2 * g_i * g_j)
+    # L = torch.zeros((N, N), device=device)
+    # for i in range(N):
+    #     for j in range(N):
+    #         gi, gj = groupIdx[i], groupIdx[j]
+    #         if gi == gj:
+    #             g_size = NG[unique_groups == gi]
+    #             L[i, j] = 1 / (G * g_size**2) - 1 / (G**2 * g_size**2)
+    #         else:
+    #             g_i = NG[unique_groups == gi]
+    #             g_j = NG[unique_groups == gj]
+    #             L[i, j] = -1 / (G**2 * g_i * g_j)
 
-    del groupIdx, unique_groups, NG
-    gc.collect()
+
+    # Construct L matrix
+    L = torch.zeros((N, N), dtype=Kx.dtype, device=device)
+
+    for g, count in zip(unique_groups, group_counts):
+        idx = (groupIdx == g).nonzero(as_tuple=True)[0]
+        val = 1 / (G * count.item()**2) - 1 / (G**2 * count.item()**2)
+        L[idx.unsqueeze(1), idx] = val
+
+    for i, (g1, s1) in enumerate(zip(unique_groups, group_counts)):
+        for j, (g2, s2) in enumerate(zip(unique_groups, group_counts)):
+            if g1 != g2:
+                idx1 = (groupIdx == g1).nonzero(as_tuple=True)[0]
+                idx2 = (groupIdx == g2).nonzero(as_tuple=True)[0]
+                val = -1 / (G**2 * s1.item() * s2.item())
+                L[idx1.unsqueeze(1), idx2] = val
+
+    # del groupIdx, unique_groups, NG
+    # gc.collect()
 
     # Center Kx and Ky
     Kx = H @ Kx @ H
@@ -270,12 +289,28 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     A = torch.linalg.solve(A_left, A_right)
 
     # Eigen decomposition (use eigh if A is symmetric)
-    eigvals, eigvecs = torch.linalg.eigh(A)
-    eigvals = eigvals[-M:]
-    eigvecs = eigvecs[:, -M:]
+    # eigvals, eigvecs = torch.linalg.eigh(A)
+    # eigvals = eigvals[-M:]
+    # eigvecs = eigvecs[:, -M:]
 
-    for i in range(M):
-        eigvecs[:, i] /= torch.sqrt(eigvals[i])
+    if torch.allclose(A, A.T, atol=1e-6):
+        eigvals, eigvecs = torch.linalg.eigh(A)
+        eigvals = eigvals[-M:]
+        eigvecs = eigvecs[:, -M:]
+    else:
+        eigvals, eigvecs = torch.linalg.eig(A)
+        eigvals = eigvals.real
+        eigvecs = eigvecs.real
+        _, indices = torch.topk(eigvals, M)
+        eigvals = eigvals[indices]
+        eigvecs = eigvecs[:, indices]
+
+
+    # for i in range(M):
+    #     eigvecs[:, i] /= torch.sqrt(eigvals[i])
+      # Normalize eigenvectors
+    eigvecs = eigvecs / torch.sqrt(eigvals.unsqueeze(0))
+
 
     V = eigvecs
     D = torch.diag(eigvals)
@@ -288,4 +323,4 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     else:
         Xt = None
 
-    return V.cpu().numpy(), D.cpu().numpy(), X.cpu().numpy(), Xt.cpu().numpy() if Xt is not None else None
+    return V, D, X, Xt
