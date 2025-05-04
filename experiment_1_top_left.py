@@ -218,11 +218,11 @@ for rep in range(n_repeat):
         offset += n
     domain_idx_memmap.flush()  # ensure it's written
 
-    domain_idx = np.memmap (domain_idx_path, dtype='int32', mode='r', shape=(sum(n_ex),))
+    # domain_idx = np.memmap (domain_idx_path, dtype='int32', mode='r', shape=(sum(n_ex),))
 
     # are_equal = np.allclose(domain_idx, domain_idx_2)
     # print(are_equal)
-    
+
     # Use RBF kernel with chosen bandwidth
     gamma_x = 1.0 / x_temp.shape[1]
     gamma_y = 1.0
@@ -235,35 +235,37 @@ for rep in range(n_repeat):
     Ky = compute_rbf_kernel_blockwise_to_memmap(y_temp, y_temp, gamma=gamma_y, mmap_path=Ky_path)
     Kt = compute_rbf_kernel_blockwise_to_memmap(x_test, x_temp, gamma=gamma_x, mmap_path=Kt_path)
     N = x_temp.shape[0]
-    Kx = np.memmap(Kx_path, dtype='float32', mode='r', shape=(N, N))
-    Ky = np.memmap(Ky_path, dtype='float32', mode='r', shape=(N, N))
-    Kt = np.memmap(Kt_path, dtype='float32', mode='r', shape=(x_test.shape[0], N))
+    # Kx = np.memmap(Kx_path, dtype='float32', mode='r', shape=(N, N))
+    # Ky = np.memmap(Ky_path, dtype='float32', mode='r', shape=(N, N))
+    # Kt = np.memmap(Kt_path, dtype='float32', mode='r', shape=(x_test.shape[0], N))
 
   
-    unique_domains = np.unique(domain_idx)
+    # unique_domains = np.unique(domain_idx)
     lambda_ = 1e-3
     epsilon = 1e-3
     m = 2
 
-    # V, D, Z_train, Z_test = dica_torch(
-    # Kx_np=Kx, 
-    # Ky_np=Ky, 
-    # Kt_np=Kt, 
-    # groupIdx_np=domain_idx, 
-    # lambd=lambda_, 
-    # epsilon=epsilon, 
-    # M=m
-    # )
-
-    V, D, Z_train, Z_test = dica(
-    Kx=Kx, 
-    Ky=Ky, 
-    Kt=Kt, 
-    groupIdx=domain_idx, 
+    V, D, Z_train, Z_test = dica_torch(
+    Kx_path = Kx_path, 
+    Ky_path = Ky_path, 
+    Kt_path = Kt_path, 
+    N = N,
+    Nt = x_test.shape[0],
+    groupIdx_path = domain_idx_path, 
     lambd=lambda_, 
     epsilon=epsilon, 
     M=m
     )
+
+    # V, D, Z_train, Z_test = dica(
+    #   Kx_path = Kx_path, 
+    #   Ky_path = Ky_path, 
+    #   Kt_path = Kt_path, 
+    #   groupIdx = domain_idx, 
+    #   lambd = lambda_, 
+    #   epsilon = epsilon, 
+    #   M = m
+    #   )
 
     Z_train = Z_train.T
     Z_test = Z_test.T

@@ -5,7 +5,9 @@ from numpy.linalg import solve
 from scipy.io import loadmat
 from sklearn.metrics.pairwise import rbf_kernel
 from utils import *
+import torch
 import gc
+
 
 
 
@@ -41,9 +43,6 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
     Xt : (M, Nt) ndarray
         Projection of test data.
     """
-    start = get_memory_usage_gb()
-    # Kx = Kx.astype(np.float32)
-    # Ky = Ky.astype(np.float32)
 
     N = Kx.shape[0]
     Nt = Kt.shape[0] if Kt is not None else 0
@@ -52,77 +51,67 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
         raise ValueError("Kx and Ky must be square matrices of the same size.")
 
     unique_groups = np.unique(groupIdx)
-    G = len(unique_groups)
     NG = np.array([np.sum(groupIdx == g) for g in unique_groups])
 
     # Centering matrix
     H = np.eye(N) - np.ones((N, N)) / N
   
     L_path = build_L_memmap(groupIdx=groupIdx, N=N, L_path='Experiment_01_top_left/L.dat')
-    L = np.memmap(L_path, dtype='float32', mode='r', shape=(N, N))
-
     del groupIdx, unique_groups, NG
     gc.collect()
 
     # Center kernel matrices
+    # Ky = H @ Ky @ H
     Ky_path = 'Experiment_01_top_left/Ky.dat'
-
-    # start = get_memory_usage_gb()
     Ky_centered_path = center_kernel_memmap(Ky_path, shape=(N, N))
-    Ky = np.memmap(Ky_centered_path, dtype='float32', mode='r', shape=(N, N))
 
     # Kx = H @ Kx @ H
-    Kx_path = 'Experiment_01_top_left/Kx.dat'  # đường dẫn tới file chứa memmap Kx
+    Kx_path = 'Experiment_01_top_left/Kx.dat'
     Kx_centered_path = center_kernel_memmap(Kx_path, shape=(N, N))
-    Kx = np.memmap(Kx_centered_path, dtype='float32', mode='r', shape=(N, N))
-    
-    print("Suppper hihi")
-    
+
+    # Calculate A left
     A_left_path = "Experiment_01_top_left/A_left.dat"
-
     A_left_path = compute_A_left_blockwise(
-    Kx_path=Kx_centered_path,
-    L_path=L_path,  
-    out_path= A_left_path,
-    N= N,
-    lambd=0.01,
-    block_size=512 
-    )
-
-    del L
+        Kx_path = Kx_centered_path,
+        L_path = L_path,  
+        out_path = A_left_path,
+        N = N,
+        lambd = 0.01,
+        block_size = 512 
+        )
+    
     gc.collect()
 
+    # Calculate mid
     Ky_eps = Ky.copy()
     Ky_eps[np.diag_indices_from(Ky_eps)] += N * epsilon
 
-
     mid_path = "Experiment_01_top_left/mid.dat"
     mid = np.memmap(mid_path, dtype=Kx.dtype, mode='w+', shape=(N, N))
-    block_size = 512  # adjust to fit your RAM
+    block_size = 512
 
     for i in range(0, N, block_size):
         i_end = min(i + block_size, N)
 
-        # Right-hand side block
         rhs_block = Kx @ Kx[:, i:i_end]
 
         # Solve the linear system
         mid[:, i:i_end] = solve(Ky_eps, rhs_block)
 
-        mid.flush()  # ensure it’s written to disk
+        mid.flush()
         gc.collect()
 
     del Ky_eps, rhs_block
     gc.collect()
 
     mid = np.memmap(mid_path, dtype=np.float32, mode='r', shape=(N, N))
-    # A_right_1 = Ky @ mid
 
+    # A_right_1 = Ky @ mid
     A_right_path = "Experiment_01_top_left/A_right.dat"
     A_right_path = compute_A_right_blockwise(
-        Ky_path=Ky_centered_path,
-        mid_path=mid_path,
-        out_path=A_right_path,
+        Ky_path = Ky_centered_path,
+        mid_path = mid_path,
+        out_path = A_right_path,
         N=N
     )
 
@@ -130,22 +119,22 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
     del Ky
     gc.collect()
 
-    # A1 = solve(A_left, A_right)
-
+    # A = solve(A_left, A_right)
     A_path = "Experiment_01_top_left/A.dat"
 
     A_path = solve_blockwise(
-        A_left_path=A_left_path,
-        A_right_path=A_right_path,
-        out_path=A_path,
+        A_left_path = A_left_path,
+        A_right_path = A_right_path,
+        out_path = A_path,
         N=N,
         block_size=512  # adjust if needed
     )
-    A = np.memmap(A_path, dtype=np.float32, mode='r', shape=(N, N))
+    #
 
     # del A_left, A_right
     gc.collect()
 
+    A = np.memmap(A_path, dtype=np.float32, mode='r', shape=(N, N))
     eigvals, eigvecs = eigs(A, k=M)
     del A
 
@@ -231,20 +220,18 @@ def project_test_kernel(Kt, B, K_train):
     """Project test kernel using B and K."""
     return Kt @ B @ B.T @ K_train
 
-import torch
-import gc
 
-def dica_torch(Kx_np, Ky_np, Kt_np, groupIdx_np, lambd, epsilon, M):
+def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, M, dtype='float32'):
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Convert NumPy inputs to GPU tensors
-    Kx = torch.tensor(Kx_np, dtype=torch.float32, device=device)
-    Ky = torch.tensor(Ky_np, dtype=torch.float32, device=device)
-    groupIdx = torch.tensor(groupIdx_np, dtype=torch.int64, device=device)
-
-    N = Kx.shape[0]
-    Nt = Kt_np.shape[0] if Kt_np is not None else 0
-    Kt = torch.tensor(Kt_np, dtype=torch.float32, device=device) if Kt_np is not None else None
+    Kx = torch.from_numpy(np.memmap(Kx_path, dtype=dtype, mode='r', shape=(N, N))).to(device)
+    Ky = torch.from_numpy(np.memmap(Ky_path, dtype=dtype, mode='r', shape=(N, N))).to(device)
+    Kt = torch.from_numpy(np.memmap(Kt_path, dtype=dtype, mode='r', shape=(Nt, N))).to(device)
+    groupIdx = torch.from_numpy(np.memmap(groupIdx_path, dtype='int32', mode='r', shape=(N,))).to(device)
+   
+    Nt = Kt.shape[0] if Kt is not None else 0
 
     # Centering matrix H
     I = torch.eye(N, device=device)
