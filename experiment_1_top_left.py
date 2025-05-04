@@ -129,11 +129,7 @@ for rep in range(n_repeat):
 
     # ************** 1. Pooled *********************
     print(f'1. Pooling the data')
-    # lr_temp = linear_model.LinearRegression()
-    # lr_temp.fit(x_temp, y_temp)
     results['pool'][rep, index] = train_linear_and_eval(x_temp, y_temp, x_test, y_test)
-    # mse(lr_temp, x_test, y_test)
-
 
     # *************** 2. Mean ************
     print (f'2. Mean prediction')
@@ -148,6 +144,7 @@ for rep in range(n_repeat):
                                    delta=alpha_test, valid_split=0.6, 
                                    use_hsic=use_hsic)
     
+  
     if p<10:
       if s_hat.size> 0:
         lr_s_temp = linear_model.LinearRegression()
@@ -206,12 +203,26 @@ for rep in range(n_repeat):
     # *********** 7. DICA ********
     print (f'7. DICA')
     
-    domain_idx = []
+    # domain_idx = []
 
+    # for domain, n in enumerate(n_ex):
+    #     domain_idx.extend([domain] * n)
+    # domain_idx = np.array(domain_idx)
+
+    domain_idx_path = os.path.join(save_dir, 'domain_idx.dat')
+    
+    domain_idx_memmap = np.memmap(domain_idx_path, dtype='int32', mode='w+', shape=(sum(n_ex)))
+    offset = 0
     for domain, n in enumerate(n_ex):
-        domain_idx.extend([domain] * n)
-    domain_idx = np.array(domain_idx)
+        domain_idx_memmap[offset:offset+n] = domain
+        offset += n
+    domain_idx_memmap.flush()  # ensure it's written
 
+    domain_idx = np.memmap (domain_idx_path, dtype='int32', mode='r', shape=(sum(n_ex),))
+
+    # are_equal = np.allclose(domain_idx, domain_idx_2)
+    # print(are_equal)
+    
     # Use RBF kernel with chosen bandwidth
     gamma_x = 1.0 / x_temp.shape[1]
     gamma_y = 1.0
@@ -229,17 +240,26 @@ for rep in range(n_repeat):
     Kt = np.memmap(Kt_path, dtype='float32', mode='r', shape=(x_test.shape[0], N))
 
   
-    N = x_temp.shape[0]
     unique_domains = np.unique(domain_idx)
     lambda_ = 1e-3
     epsilon = 1e-3
     m = 2
 
-    V, D, Z_train, Z_test = dica_torch(
-    Kx_np=Kx, 
-    Ky_np=Ky, 
-    Kt_np=Kt, 
-    groupIdx_np=domain_idx, 
+    # V, D, Z_train, Z_test = dica_torch(
+    # Kx_np=Kx, 
+    # Ky_np=Ky, 
+    # Kt_np=Kt, 
+    # groupIdx_np=domain_idx, 
+    # lambd=lambda_, 
+    # epsilon=epsilon, 
+    # M=m
+    # )
+
+    V, D, Z_train, Z_test = dica(
+    Kx=Kx, 
+    Ky=Ky, 
+    Kt=Kt, 
+    groupIdx=domain_idx, 
     lambd=lambda_, 
     epsilon=epsilon, 
     M=m
