@@ -232,6 +232,9 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     Kt = torch.from_numpy(np.memmap(Kt_path, dtype=dtype, mode='r', shape=(Nt, N)).copy()).to(device)
     groupIdx = torch.from_numpy(np.memmap(groupIdx_path, dtype='int32', mode='r', shape=(N,)).copy()).to(device)
    
+    torch.cuda.empty_cache()
+    gc.collect()
+
     Nt = Kt.shape[0] if Kt is not None else 0
 
     # Centering matrix H
@@ -273,8 +276,9 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
                 val = -1 / (G**2 * s1.item() * s2.item())
                 L[idx1.unsqueeze(1), idx2] = val
 
-    # del groupIdx, unique_groups, NG
-    # gc.collect()
+    del groupIdx, unique_groups, group_counts
+    torch.cuda.empty_cache()
+    gc.collect()
 
     # Center Kx and Ky
     Kx = H @ Kx @ H
@@ -288,10 +292,10 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     # Solve final system
     A = torch.linalg.solve(A_left, A_right)
 
-    # Eigen decomposition (use eigh if A is symmetric)
-    # eigvals, eigvecs = torch.linalg.eigh(A)
-    # eigvals = eigvals[-M:]
-    # eigvecs = eigvecs[:, -M:]
+    del A_left, A_right, mid, Ky_eps, Ky
+    torch.cuda.empty_cache()
+    gc.collect()
+
 
     if torch.allclose(A, A.T, atol=1e-6):
         eigvals, eigvecs = torch.linalg.eigh(A)
@@ -305,22 +309,32 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
         eigvals = eigvals[indices]
         eigvecs = eigvecs[:, indices]
 
-
-    # for i in range(M):
-    #     eigvecs[:, i] /= torch.sqrt(eigvals[i])
-      # Normalize eigenvectors
     eigvecs = eigvecs / torch.sqrt(eigvals.unsqueeze(0))
 
 
     V = eigvecs
     D = torch.diag(eigvals)
+
+    del A, eigvecs, eigvals
+    torch.cuda.empty_cache()
+    gc.collect()
+
     X = V.T @ Kx
+    del Kx
+    torch.cuda.empty_cache()
+    gc.collect()
 
     if Kt is not None and Nt > 0:
         Ht = torch.eye(Nt, device=device) - torch.ones((Nt, Nt), device=device) / Nt
         Kt_c = Ht @ Kt @ H
         Xt = V.T @ Kt_c.T
+        del Ht, Kt, Kt_c
+
     else:
         Xt = None
+
+
+    torch.cuda.empty_cache()
+    gc.collect()
 
     return V, D, X, Xt
