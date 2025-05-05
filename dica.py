@@ -284,10 +284,32 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     Kx = H @ Kx @ H
     Ky = H @ Ky @ H
 
-    A_left = Kx @ L @ Kx + Kx + lambd * torch.eye(N, device=device)
+    # Kx1 = center_kernel_blockwise(Kx, block_size=512)
+    # Ky = center_kernel_blockwise(Ky, block_size=512)
+
+    # diff = torch.norm(Kx- Kx1)
+    # relative_error = diff / torch.norm(Kx)
+
+    # print(f"L2 norm difference: {diff.item()}")
+    # print(f"Relative error: {relative_error.item()}")
+
+    Kx_L = blockwise_mm(Kx, L, block_size=512)
+    Kx_L_Kx = blockwise_mm(Kx_L, Kx, block_size=512)
+    del Kx_L, L
+    torch.cuda.empty_cache()
+    gc.collect()
+
+    Kx_Kx = blockwise_mm(Kx, Kx, block_size=512)
+
+    A_left = Kx_L_Kx + Kx + lambd * torch.eye(N, device=device)
     Ky_eps = Ky + N * epsilon * torch.eye(N, device=device)
-    mid = torch.linalg.solve(Ky_eps, Kx @ Kx)
+    mid = torch.linalg.solve(Ky_eps, Kx_Kx)
     A_right = Ky @ mid
+
+    # A_left = Kx @ L @ Kx + Kx + lambd * torch.eye(N, device=device)
+    # Ky_eps = Ky + N * epsilon * torch.eye(N, device=device)
+    # mid = torch.linalg.solve(Ky_eps, Kx @ Kx)
+    # A_right = Ky @ mid
 
     # Solve final system
     A = torch.linalg.solve(A_left, A_right)
