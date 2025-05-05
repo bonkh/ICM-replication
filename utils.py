@@ -5,6 +5,7 @@ from sklearn.metrics.pairwise import rbf_kernel
 from scipy.linalg import solve
 import psutil
 import gc
+import inspect
 import os
 import torch
 
@@ -380,7 +381,7 @@ def solve_blockwise(A_left_path, A_right_path, out_path, N, block_size=512, dtyp
     gc.collect()
     return out_path
 
-def blockwise_mm(A, B, block_size=1024):
+def blockwise_mm(A, B, block_size=512, device=None):
     """Blockwise matrix multiplication: A (n x m) @ B (m x p)"""
     n, m = A.shape
     _, p = B.shape
@@ -397,31 +398,77 @@ def blockwise_mm(A, B, block_size=1024):
                 result[i:i_end, j:j_end] += A[i:i_end, k:k_end] @ B[k:k_end, j:j_end]
 
     return result
-
-def center_kernel_blockwise(K, block_size=512):
-    """Efficiently center a kernel matrix K: K_c = H @ K @ H"""
+def center_kernel_blockwise(K, block_size=512, device=None):
+    """
+    Centers a kernel matrix blockwise to reduce memory usage.
+    Args:
+        K (torch.Tensor): NxN kernel matrix.
+        block_size (int): Size of blocks.
+    Returns:
+        K_centered (torch.Tensor): Centered kernel matrix.
+    """
     N = K.shape[0]
-    device = K.device
-    dtype = K.dtype
+    K_mean_row = K.mean(dim=1, keepdim=True)
+    K_mean_col = K.mean(dim=0, keepdim=True)
+    K_mean_total = K.mean()
 
-    # Precompute means
-    row_mean = K.mean(dim=1, keepdim=True)
-    col_mean = K.mean(dim=0, keepdim=True)
-    total_mean = K.mean()
+    K_centered = torch.zeros_like(K)
 
-    # Allocate result
-    Kc = torch.empty_like(K, device=device)
-
-    # Blockwise centering
     for i in range(0, N, block_size):
         i_end = min(i + block_size, N)
         for j in range(0, N, block_size):
             j_end = min(j + block_size, N)
-            Kc[i:i_end, j:j_end] = (
-                K[i:i_end, j:j_end]
-                - row_mean[i:i_end]
-                - col_mean[:, j:j_end].T
-                + total_mean
-            )
 
-    return Kc
+            block = K[i:i_end, j:j_end]
+            block -= K_mean_row[i:i_end]
+            block -= K_mean_col[:, j:j_end]
+            block += K_mean_total
+            K_centered[i:i_end, j:j_end] = block
+
+    return K_centered
+
+
+def try_gpu_then_cpu(fn, *args, **kwargs):
+    try:
+        return fn(*args, **kwargs)
+    except RuntimeError as e:
+        if torch.cuda.is_available() and "CUDA out of memory" in str(e):
+            print(f"[OOM] Falling back to CPU for: {fn.__name__}")
+            torch.cuda.empty_cache()
+            gc.collect()
+
+            # Move tensor arguments to CPU
+            args_cpu = tuple(a.cpu() if isinstance(a, torch.Tensor) and a.is_cuda else a for a in args)
+            kwargs_cpu = {k: v.cpu() if isinstance(v, torch.Tensor) and v.is_cuda else v for k, v in kwargs.items()}
+
+            return fn(*args_cpu, **kwargs_cpu)
+        else:
+            raise
+
+
+def safe_solve(A_left, A_right, device=None):
+    return torch.linalg.solve(A_left.to(device), A_right.to(device))
+
+
+def build_L_matrix(groupIdx, N, dtype=torch.float32, device='cuda'):
+    groupIdx = groupIdx.to(device)
+    unique_groups = torch.unique(groupIdx)
+    G = len(unique_groups)
+    group_counts = torch.stack([(groupIdx == g).sum() for g in unique_groups])
+
+    L = torch.zeros((N, N), dtype=dtype, device=device)
+
+    for g, count in zip(unique_groups, group_counts):
+        idx = (groupIdx == g).nonzero(as_tuple=True)[0]
+        val = 1 / (G * count.item()**2) - 1 / (G**2 * count.item()**2)
+        L[idx.unsqueeze(1), idx] = val
+
+    for i, (g1, s1) in enumerate(zip(unique_groups, group_counts)):
+        for j, (g2, s2) in enumerate(zip(unique_groups, group_counts)):
+            if g1 != g2:
+                idx1 = (groupIdx == g1).nonzero(as_tuple=True)[0]
+                idx2 = (groupIdx == g2).nonzero(as_tuple=True)[0]
+                val = -1 / (G**2 * s1.item() * s2.item())
+                L[idx1.unsqueeze(1), idx2] = val
+
+    return L
