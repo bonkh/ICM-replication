@@ -444,21 +444,45 @@ def center_kernel_blockwise(K, block_size=512, device=None):
 #             return fn(*args_cpu, **kwargs_cpu)
 #         else:
 #             raise
+# def try_gpu_then_cpu(fn, *args, **kwargs):
+#     def to_cpu(x):
+#         return x.cpu() if isinstance(x, torch.Tensor) and x.is_cuda else x
 
-def try_gpu_then_cpu(fn, *args, **kwargs):
+#     try:
+#         return fn(*args, **kwargs)
+#     except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
+#         if "CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError):
+#             print(f"[OOM] Falling back to CPU for: {fn.__name__}")
+#             torch.cuda.empty_cache()
+#             gc.collect()
+#             args_cpu = tuple(to_cpu(a) for a in args)
+#             kwargs_cpu = {k: to_cpu(v) for k, v in kwargs.items()}
+#             return fn(*args_cpu, **kwargs_cpu)
+#         raise
+def try_gpu_then_cpu(expr_fn):
     try:
-        return fn(*args, **kwargs)
+        return expr_fn()
     except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
-        if torch.cuda.is_available() and ("CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError)):
-            print(f"[OOM] Falling back to CPU for: {fn.__name__}")
+        if "CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError):
+            print(f"[OOM] Falling back to CPU for: {expr_fn}")
             torch.cuda.empty_cache()
             gc.collect()
 
-            # Move tensor args to CPU
-            args_cpu = tuple(a.cpu() if isinstance(a, torch.Tensor) and a.is_cuda else a for a in args)
-            kwargs_cpu = {k: v.cpu() if isinstance(v, torch.Tensor) and v.is_cuda else v for k, v in kwargs.items()}
+            def to_cpu(x):
+                return x.cpu() if isinstance(x, torch.Tensor) and x.is_cuda else x
 
-            return fn(*args_cpu, **kwargs_cpu)
+            # Manually walk through closure variables
+            if hasattr(expr_fn, '__closure__') and expr_fn.__closure__:
+                for cell in expr_fn.__closure__:
+                    val = cell.cell_contents
+                    if isinstance(val, torch.Tensor) and val.is_cuda:
+                        val_cpu = val.cpu()
+                        try:
+                            cell.cell_contents = val_cpu  # may fail, Python limitation
+                        except:
+                            pass
+
+            return expr_fn()
         else:
             raise
 
