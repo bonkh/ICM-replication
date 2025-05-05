@@ -6,6 +6,8 @@ from scipy.linalg import solve
 import psutil
 import gc
 import os
+import torch
+
 def train_linear_and_eval(x, y, x_test, y_test):
     model = linear_model.LinearRegression()
     model.fit(x, y)
@@ -377,3 +379,49 @@ def solve_blockwise(A_left_path, A_right_path, out_path, N, block_size=512, dtyp
     del A_left, A_right, A_out
     gc.collect()
     return out_path
+
+def blockwise_mm(A, B, block_size=1024):
+    """Blockwise matrix multiplication: A (n x m) @ B (m x p)"""
+    n, m = A.shape
+    _, p = B.shape
+    device = A.device
+    dtype = A.dtype
+    result = torch.zeros((n, p), device=device, dtype=dtype)
+
+    for i in range(0, n, block_size):
+        i_end = min(i + block_size, n)
+        for j in range(0, p, block_size):
+            j_end = min(j + block_size, p)
+            for k in range(0, m, block_size):
+                k_end = min(k + block_size, m)
+                result[i:i_end, j:j_end] += A[i:i_end, k:k_end] @ B[k:k_end, j:j_end]
+
+    return result
+
+def center_kernel_blockwise(K, block_size=512):
+    """Efficiently center a kernel matrix K: K_c = H @ K @ H"""
+    N = K.shape[0]
+    device = K.device
+    dtype = K.dtype
+
+    # Precompute means
+    row_mean = K.mean(dim=1, keepdim=True)
+    col_mean = K.mean(dim=0, keepdim=True)
+    total_mean = K.mean()
+
+    # Allocate result
+    Kc = torch.empty_like(K, device=device)
+
+    # Blockwise centering
+    for i in range(0, N, block_size):
+        i_end = min(i + block_size, N)
+        for j in range(0, N, block_size):
+            j_end = min(j + block_size, N)
+            Kc[i:i_end, j:j_end] = (
+                K[i:i_end, j:j_end]
+                - row_mean[i:i_end]
+                - col_mean[:, j:j_end].T
+                + total_mean
+            )
+
+    return Kc
