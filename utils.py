@@ -459,30 +459,47 @@ def center_kernel_blockwise(K, block_size=512, device=None):
 #             kwargs_cpu = {k: to_cpu(v) for k, v in kwargs.items()}
 #             return fn(*args_cpu, **kwargs_cpu)
 #         raise
-def try_gpu_then_cpu(expr_fn):
+# def try_gpu_then_cpu(expr_fn):
+#     try:
+#         return expr_fn()
+#     except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
+#         if "CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError):
+#             print(f"[OOM] Falling back to CPU for: {expr_fn}")
+#             torch.cuda.empty_cache()
+#             gc.collect()
+
+#             def to_cpu(x):
+#                 return x.cpu() if isinstance(x, torch.Tensor) and x.is_cuda else x
+
+#             # Manually walk through closure variables
+#             if hasattr(expr_fn, '__closure__') and expr_fn.__closure__:
+#                 for cell in expr_fn.__closure__:
+#                     val = cell.cell_contents
+#                     if isinstance(val, torch.Tensor) and val.is_cuda:
+#                         val_cpu = val.cpu()
+#                         try:
+#                             cell.cell_contents = val_cpu  # may fail, Python limitation
+#                         except:
+#                             pass
+
+#             return expr_fn()
+#         else:
+#             raise
+def try_gpu_then_cpu(expr_fn, *args, **kwargs):
+    def to_cpu(x):
+        return x.cpu() if isinstance(x, torch.Tensor) and x.is_cuda else x
+
     try:
-        return expr_fn()
+        return expr_fn(*args, **kwargs)
     except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
         if "CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError):
-            print(f"[OOM] Falling back to CPU for: {expr_fn}")
+            print(f"[OOM] Falling back to CPU for: {expr_fn.__name__ if hasattr(expr_fn, '__name__') else expr_fn}")
             torch.cuda.empty_cache()
             gc.collect()
 
-            def to_cpu(x):
-                return x.cpu() if isinstance(x, torch.Tensor) and x.is_cuda else x
-
-            # Manually walk through closure variables
-            if hasattr(expr_fn, '__closure__') and expr_fn.__closure__:
-                for cell in expr_fn.__closure__:
-                    val = cell.cell_contents
-                    if isinstance(val, torch.Tensor) and val.is_cuda:
-                        val_cpu = val.cpu()
-                        try:
-                            cell.cell_contents = val_cpu  # may fail, Python limitation
-                        except:
-                            pass
-
-            return expr_fn()
+            args_cpu = tuple(to_cpu(a) for a in args)
+            kwargs_cpu = {k: to_cpu(v) for k, v in kwargs.items()}
+            return expr_fn(*args_cpu, **kwargs_cpu)
         else:
             raise
 
