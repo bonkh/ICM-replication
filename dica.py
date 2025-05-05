@@ -261,58 +261,73 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
 
 
     # Construct L matrix
-    L = torch.zeros((N, N), dtype=Kx.dtype, device=device)
+    # L = torch.zeros((N, N), dtype=Kx.dtype, device=device)
 
-    for g, count in zip(unique_groups, group_counts):
-        idx = (groupIdx == g).nonzero(as_tuple=True)[0]
-        val = 1 / (G * count.item()**2) - 1 / (G**2 * count.item()**2)
-        L[idx.unsqueeze(1), idx] = val
+    # for g, count in zip(unique_groups, group_counts):
+    #     idx = (groupIdx == g).nonzero(as_tuple=True)[0]
+    #     val = 1 / (G * count.item()**2) - 1 / (G**2 * count.item()**2)
+    #     L[idx.unsqueeze(1), idx] = val
 
-    for i, (g1, s1) in enumerate(zip(unique_groups, group_counts)):
-        for j, (g2, s2) in enumerate(zip(unique_groups, group_counts)):
-            if g1 != g2:
-                idx1 = (groupIdx == g1).nonzero(as_tuple=True)[0]
-                idx2 = (groupIdx == g2).nonzero(as_tuple=True)[0]
-                val = -1 / (G**2 * s1.item() * s2.item())
-                L[idx1.unsqueeze(1), idx2] = val
+    # for i, (g1, s1) in enumerate(zip(unique_groups, group_counts)):
+    #     for j, (g2, s2) in enumerate(zip(unique_groups, group_counts)):
+    #         if g1 != g2:
+    #             idx1 = (groupIdx == g1).nonzero(as_tuple=True)[0]
+    #             idx2 = (groupIdx == g2).nonzero(as_tuple=True)[0]
+    #             val = -1 / (G**2 * s1.item() * s2.item())
+    #             L[idx1.unsqueeze(1), idx2] = val
+
+    L = try_gpu_then_cpu(build_L_matrix, groupIdx, N, dtype=Kx.dtype, device=device)
 
     del groupIdx, unique_groups, group_counts
     torch.cuda.empty_cache()
     gc.collect()
 
     # Center Kx and Ky
-    Kx = H @ Kx @ H
-    Ky = H @ Ky @ H
+    # Kx = H @ Kx @ H
+    # Ky = H @ Ky @ H
 
-    # Kx1 = center_kernel_blockwise(Kx, block_size=512)
+    # Kx = center_kernel_blockwise(Kx, block_size=512)
     # Ky = center_kernel_blockwise(Ky, block_size=512)
 
-    # diff = torch.norm(Kx- Kx1)
-    # relative_error = diff / torch.norm(Kx)
+    # Kx_L = blockwise_mm(Kx, L, block_size=512)
+    # Kx_L_Kx = blockwise_mm(Kx_L, Kx, block_size=512)
+    Kx = try_gpu_then_cpu(center_kernel_blockwise, Kx, block_size=512, device=device)
+    Ky = try_gpu_then_cpu(center_kernel_blockwise, Ky, block_size=512,  device=device)
 
-    # print(f"L2 norm difference: {diff.item()}")
-    # print(f"Relative error: {relative_error.item()}")
+    Kx_L = try_gpu_then_cpu(blockwise_mm, Kx, L, block_size=512,  device=device)
+    Kx_L_Kx = try_gpu_then_cpu(blockwise_mm, Kx_L, Kx, block_size=512,  device=device)
 
-    Kx_L = blockwise_mm(Kx, L, block_size=512)
-    Kx_L_Kx = blockwise_mm(Kx_L, Kx, block_size=512)
     del Kx_L, L
     torch.cuda.empty_cache()
     gc.collect()
 
-    Kx_Kx = blockwise_mm(Kx, Kx, block_size=512)
+    # Kx_Kx = blockwise_mm(Kx, Kx, block_size=512)
+    Kx_Kx = try_gpu_then_cpu(blockwise_mm, Kx, Kx, block_size=512)
 
-    A_left = Kx_L_Kx + Kx + lambd * torch.eye(N, device=device)
-    Ky_eps = Ky + N * epsilon * torch.eye(N, device=device)
-    mid = torch.linalg.solve(Ky_eps, Kx_Kx)
-    A_right = Ky @ mid
 
-    # A_left = Kx @ L @ Kx + Kx + lambd * torch.eye(N, device=device)
+    # A_left = Kx_L_Kx + Kx + lambd * torch.eye(N, device=device)
     # Ky_eps = Ky + N * epsilon * torch.eye(N, device=device)
-    # mid = torch.linalg.solve(Ky_eps, Kx @ Kx)
+    # mid = torch.linalg.solve(Ky_eps, Kx_Kx)
     # A_right = Ky @ mid
+    # A_left = Kx_L_Kx + Kx + lambda * I
+    eye_N = try_gpu_then_cpu(torch.eye, N, device=device, dtype=Kx.dtype)
+    A_left = try_gpu_then_cpu(torch.add, Kx_L_Kx, Kx)
+    A_left = try_gpu_then_cpu(torch.add, A_left, lambd * eye_N)
+
+    # Ky_eps = Ky + N * epsilon * I
+    Ky_eps = try_gpu_then_cpu(torch.add, Ky, N * epsilon * eye_N)
+
+    # Solve mid = Ky_eps⁻¹ @ Kx_Kx
+    mid = try_gpu_then_cpu(torch.linalg.solve, Ky_eps, Kx_Kx)
+
+    # A_right = Ky @ mid
+    A_right = try_gpu_then_cpu(torch.matmul, Ky, mid)
+
 
     # Solve final system
-    A = torch.linalg.solve(A_left, A_right)
+    # A = torch.linalg.solve(A_left, A_right)
+    A = try_gpu_then_cpu(safe_solve, A_left, A_right, device=device)
+
 
     del A_left, A_right, mid, Ky_eps, Ky
     torch.cuda.empty_cache()
@@ -320,11 +335,13 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
 
 
     if torch.allclose(A, A.T, atol=1e-6):
-        eigvals, eigvecs = torch.linalg.eigh(A)
+        # eigvals, eigvecs = torch.linalg.eigh(A)
+        eigvals, eigvecs = try_gpu_then_cpu(torch.linalg.eigh, A)
         eigvals = eigvals[-M:]
         eigvecs = eigvecs[:, -M:]
     else:
-        eigvals, eigvecs = torch.linalg.eig(A)
+        # eigvals, eigvecs = torch.linalg.eig(A)
+        eigvals, eigvecs = try_gpu_then_cpu(torch.linalg.eig, A)
         eigvals = eigvals.real
         eigvecs = eigvecs.real
         _, indices = torch.topk(eigvals, M)
@@ -341,7 +358,9 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     torch.cuda.empty_cache()
     gc.collect()
 
-    X = V.T @ Kx
+    # X = V.T @ Kx
+
+    X = try_gpu_then_cpu(torch.matmul, V.T, Kx)
     del Kx
     torch.cuda.empty_cache()
     gc.collect()
@@ -349,7 +368,9 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     if Kt is not None and Nt > 0:
         Ht = torch.eye(Nt, device=device) - torch.ones((Nt, Nt), device=device) / Nt
         Kt_c = Ht @ Kt @ H
-        Xt = V.T @ Kt_c.T
+        # Xt = V.T @ Kt_c.T
+        Xt = try_gpu_then_cpu(torch.matmul, V.T, Kt_c.T)
+
         del Ht, Kt, Kt_c
 
     else:
