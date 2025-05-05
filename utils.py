@@ -485,21 +485,48 @@ def center_kernel_blockwise(K, block_size=512, device=None):
 #             return expr_fn()
 #         else:
 #             raise
-def try_gpu_then_cpu(expr_fn, *args, **kwargs):
-    def to_cpu(x):
-        return x.cpu() if isinstance(x, torch.Tensor) and x.is_cuda else x
+# def try_gpu_then_cpu(expr_fn, *args, **kwargs):
+#     def to_cpu(x):
+#         return x.cpu() if isinstance(x, torch.Tensor) and x.is_cuda else x
 
+#     try:
+#         return expr_fn(*args, **kwargs)
+#     except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
+#         if "CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError):
+#             print(f"[OOM] Falling back to CPU for: {expr_fn.__name__ if hasattr(expr_fn, '__name__') else expr_fn}")
+#             torch.cuda.empty_cache()
+#             gc.collect()
+
+#             args_cpu = tuple(to_cpu(a) for a in args)
+#             kwargs_cpu = {k: to_cpu(v) for k, v in kwargs.items()}
+#             return expr_fn(*args_cpu, **kwargs_cpu)
+#         else:
+#             raise
+
+
+def try_gpu_then_cpu(fn, *args, **kwargs):
     try:
-        return expr_fn(*args, **kwargs)
+        return fn(*args, **kwargs)
     except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
         if "CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError):
-            print(f"[OOM] Falling back to CPU for: {expr_fn.__name__ if hasattr(expr_fn, '__name__') else expr_fn}")
+            print(f"[OOM] Falling back to CPU for: {fn.__name__ if hasattr(fn, '__name__') else str(fn)}")
             torch.cuda.empty_cache()
             gc.collect()
 
-            args_cpu = tuple(to_cpu(a) for a in args)
-            kwargs_cpu = {k: to_cpu(v) for k, v in kwargs.items()}
-            return expr_fn(*args_cpu, **kwargs_cpu)
+            def to_cpu(x):
+                if isinstance(x, torch.Tensor) and x.is_cuda:
+                    return x.cpu()
+                elif isinstance(x, (list, tuple)):
+                    return type(x)(to_cpu(i) for i in x)
+                elif isinstance(x, dict):
+                    return {k: to_cpu(v) for k, v in x.items()}
+                else:
+                    return x
+
+            args_cpu = to_cpu(args)
+            kwargs_cpu = to_cpu(kwargs)
+
+            return fn(*args_cpu, **kwargs_cpu)
         else:
             raise
 
