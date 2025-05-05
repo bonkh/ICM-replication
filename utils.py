@@ -428,22 +428,40 @@ def center_kernel_blockwise(K, block_size=512, device=None):
     return K_centered
 
 
+# def try_gpu_then_cpu(fn, *args, **kwargs):
+#     try:
+#         return fn(*args, **kwargs)
+#     except RuntimeError as e:
+#         if torch.cuda.is_available() and "CUDA out of memory" in str(e):
+#             print(f"[OOM] Falling back to CPU for: {fn.__name__}")
+#             torch.cuda.empty_cache()
+#             gc.collect()
+
+#             # Move tensor arguments to CPU
+#             args_cpu = tuple(a.cpu() if isinstance(a, torch.Tensor) and a.is_cuda else a for a in args)
+#             kwargs_cpu = {k: v.cpu() if isinstance(v, torch.Tensor) and v.is_cuda else v for k, v in kwargs.items()}
+
+#             return fn(*args_cpu, **kwargs_cpu)
+#         else:
+#             raise
+
 def try_gpu_then_cpu(fn, *args, **kwargs):
     try:
         return fn(*args, **kwargs)
-    except RuntimeError as e:
-        if torch.cuda.is_available() and "CUDA out of memory" in str(e):
+    except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
+        if torch.cuda.is_available() and ("CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError)):
             print(f"[OOM] Falling back to CPU for: {fn.__name__}")
             torch.cuda.empty_cache()
             gc.collect()
 
-            # Move tensor arguments to CPU
+            # Move tensor args to CPU
             args_cpu = tuple(a.cpu() if isinstance(a, torch.Tensor) and a.is_cuda else a for a in args)
             kwargs_cpu = {k: v.cpu() if isinstance(v, torch.Tensor) and v.is_cuda else v for k, v in kwargs.items()}
 
             return fn(*args_cpu, **kwargs_cpu)
         else:
             raise
+
 
 
 def safe_solve(A_left, A_right, device=None):
