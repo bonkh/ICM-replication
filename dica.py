@@ -302,8 +302,13 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
 
     # eye_N = try_gpu_then_numpy(torch.eye, N, device=device, dtype=Kx.dtype)
     eye_N = safe_eye(N, device=device, dtype=Kx.dtype)
+    eye_scaled = try_gpu_then_numpy(scale_fn, eye_N, lambd)
+
     A_left = try_gpu_then_numpy(add_fn, Kx_L_Kx, Kx)
-    A_left = try_gpu_then_numpy(add_fn, A_left, lambd * eye_N)
+
+    A_left = try_gpu_then_numpy(add_fn, A_left, eye_scaled)
+    del eye_scaled
+    gc.collect()
 
     Ky_eps = try_gpu_then_numpy(add_fn, Ky, N * epsilon * eye_N)
 
