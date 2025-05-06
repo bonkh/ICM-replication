@@ -14,8 +14,6 @@ def train_linear_and_eval(x, y, x_test, y_test):
     model.fit(x, y)
     result = mse(model, x_test, y_test)
     return result
-
-
 def get_memory_usage_gb():
     process = psutil.Process(os.getpid())
     return process.memory_info().rss / 1024**3
@@ -83,27 +81,6 @@ def mse(model, x, y):
 
 
 def compute_rbf_kernel_blockwise(X, Y=None, gamma=1.0, block_size=500, dtype=np.float32):
-    """
-    Compute RBF kernel in memory-efficient blockwise fashion.
-
-    Parameters
-    ----------
-    X : ndarray of shape (n_samples_X, n_features)
-        First input dataset.
-    Y : ndarray of shape (n_samples_Y, n_features), optional
-        Second input dataset. If None, Y = X.
-    gamma : float
-        RBF kernel coefficient.
-    block_size : int
-        Number of rows to compute per block.
-    dtype : np.dtype
-        Output dtype to control memory usage.
-
-    Returns
-    -------
-    K : ndarray of shape (n_samples_X, n_samples_Y)
-        Computed RBF kernel matrix.
-    """
     if Y is None:
         Y = X
 
@@ -121,46 +98,9 @@ def compute_rbf_kernel_blockwise(X, Y=None, gamma=1.0, block_size=500, dtype=np.
 
 def compute_rbf_kernel_blockwise_to_memmap(X, Y=None, gamma=1.0, block_size=500, 
                                            dtype=np.float32, mmap_path='kernel.dat'):
-    """
-    Compute RBF kernel in blockwise fashion and store in memmap to save RAM.
-
-    Parameters
-    ----------
-    X : ndarray of shape (n_samples_X, n_features)
-    Y : ndarray of shape (n_samples_Y, n_features), optional
-        If None, Y = X.
-    gamma : float
-        RBF kernel coefficient.
-    block_size : int
-        Block size for memory-efficient computation.
-    dtype : np.dtype
-        Data type of the output kernel matrix.
-    mmap_path : str
-        Path to the memmap file to store the kernel.
-
-    Returns
-    -------
-    K : np.memmap
-        Memory-mapped RBF kernel matrix.
-    """
+  
     if Y is None:
         Y = X
-
-    # n_X, n_Y = X.shape[0], Y.shape[0]
-
-    # # Create or overwrite memory-mapped file
-    # K = np.memmap(mmap_path, dtype=dtype, mode='w+', shape=(n_X, n_Y))
-
-    # for i in range(0, n_X, block_size):
-    #     i_end = min(i + block_size, n_X)
-    #     Xi = X[i:i_end]
-
-    #     # Compute and store block row
-    #     K_block = rbf_kernel(Xi, Y, gamma=gamma).astype(dtype)
-    #     K[i:i_end, :] = K_block
-    #     K.flush()
-
-    # return K
 
     if Y is None:
         Y = X
@@ -168,7 +108,6 @@ def compute_rbf_kernel_blockwise_to_memmap(X, Y=None, gamma=1.0, block_size=500,
     n_X = X.shape[0]
     n_Y = Y.shape[0]
 
-    # Initialize memmap file
     K = np.memmap(mmap_path, dtype=dtype, mode='w+', shape=(n_X, n_Y))
 
     for i in range(0, n_X, block_size):
@@ -184,8 +123,8 @@ def compute_rbf_kernel_blockwise_to_memmap(X, Y=None, gamma=1.0, block_size=500,
 
     return K
 
-
 def center_kernel_memmap(K_path, shape):
+
     N = shape[0]
     K = np.memmap(K_path, dtype='float32', mode='r', shape=shape)
     
@@ -211,30 +150,7 @@ def center_kernel_memmap(K_path, shape):
     del K, K_centered
     return centered_path
 
-import numpy as np
-import os
-
-
 def build_L_memmap(groupIdx, N, L_path='L.dat', dtype=np.float32):
-    """
-    Constructs the matrix L in a memory-mapped file.
-
-    Parameters
-    ----------
-    groupIdx : ndarray of shape (N,)
-        Domain/group labels for each sample.
-    N : int
-        Total number of samples.
-    L_path : str
-        Path to save the memory-mapped L matrix.
-    dtype : data-type
-        Data type for the memmap array.
-
-    Returns
-    -------
-    str
-        Path to the memory-mapped L file.
-    """
     unique_groups = np.unique(groupIdx)
     G = len(unique_groups)
     NG = np.array([np.sum(groupIdx == g) for g in unique_groups])
@@ -255,7 +171,7 @@ def build_L_memmap(groupIdx, N, L_path='L.dat', dtype=np.float32):
                 L[i, j] = -1 / (G**2 * groupSize_i * groupSize_j)
 
         if i % 100 == 0:
-            # print(f"Row {i}/{N} written")
+        
             gc.collect()
 
     L.flush()
@@ -313,32 +229,10 @@ def compute_A_left_blockwise(Kx_path, L_path, out_path, N, lambd, block_size=512
         A_left[i, i] += lambd
 
     # A = Kx @ L @ Kx + Kx + lambd * np.eye(N)
-
-    # are_equal = np.allclose(A, A_left, rtol=1e-4, atol=1e-6)
-    # print("Are equal ?:", are_equal)
-
-
     A_left.flush()
     del A_left
-    gc.collect()
-
-    # A_left_1 = np.memmap(out_path, dtype='float32', mode='r', shape=(N, N))
-    # are_equal_1 = np.allclose(A_left_1, A, rtol=1e-4, atol=1e-6)
-    # print("Are equal huh ?:", are_equal_1)
-
-    # backup_path = out_path.replace(".dat", "_backup.dat")
-
-    # # Write A_left to this new file
-    # A_left_backup = np.memmap(backup_path, dtype='float32', mode='w+', shape=(N, N))
-    # A_left_backup[:] = A_left_1[:]
-    # A_left_backup.flush()
-
-
-    # Cleanup
     del Kx, L, T1
     gc.collect()
-    # print(out_path)
-
 
     return out_path
 
@@ -381,164 +275,307 @@ def solve_blockwise(A_left_path, A_right_path, out_path, N, block_size=512, dtyp
     gc.collect()
     return out_path
 
-def blockwise_mm(A, B, block_size=512, device=None):
-    """Blockwise matrix multiplication: A (n x m) @ B (m x p)"""
-    n, m = A.shape
-    _, p = B.shape
-    device = A.device
-    dtype = A.dtype
-    result = torch.zeros((n, p), device=device, dtype=dtype)
-
-    for i in range(0, n, block_size):
-        i_end = min(i + block_size, n)
-        for j in range(0, p, block_size):
-            j_end = min(j + block_size, p)
-            for k in range(0, m, block_size):
-                k_end = min(k + block_size, m)
-                result[i:i_end, j:j_end] += A[i:i_end, k:k_end] @ B[k:k_end, j:j_end]
-
-    return result
-def center_kernel_blockwise(K, block_size=512, device=None):
-    """
-    Centers a kernel matrix blockwise to reduce memory usage.
-    Args:
-        K (torch.Tensor): NxN kernel matrix.
-        block_size (int): Size of blocks.
-    Returns:
-        K_centered (torch.Tensor): Centered kernel matrix.
-    """
-    N = K.shape[0]
-    K_mean_row = K.mean(dim=1, keepdim=True)
-    K_mean_col = K.mean(dim=0, keepdim=True)
-    K_mean_total = K.mean()
-
-    K_centered = torch.zeros_like(K)
-
-    for i in range(0, N, block_size):
-        i_end = min(i + block_size, N)
-        for j in range(0, N, block_size):
-            j_end = min(j + block_size, N)
-
-            block = K[i:i_end, j:j_end]
-            block -= K_mean_row[i:i_end]
-            block -= K_mean_col[:, j:j_end]
-            block += K_mean_total
-            K_centered[i:i_end, j:j_end] = block
-
-    return K_centered
 
 
-# def try_gpu_then_cpu(fn, *args, **kwargs):
-#     try:
-#         return fn(*args, **kwargs)
-#     except RuntimeError as e:
-#         if torch.cuda.is_available() and "CUDA out of memory" in str(e):
-#             print(f"[OOM] Falling back to CPU for: {fn.__name__}")
-#             torch.cuda.empty_cache()
-#             gc.collect()
+use_gpu = {"enabled": True}
 
-#             # Move tensor arguments to CPU
-#             args_cpu = tuple(a.cpu() if isinstance(a, torch.Tensor) and a.is_cuda else a for a in args)
-#             kwargs_cpu = {k: v.cpu() if isinstance(v, torch.Tensor) and v.is_cuda else v for k, v in kwargs.items()}
+def get_tensor_size_in_bytes(tensor):
+    return tensor.element_size() * tensor.nelement()
 
-#             return fn(*args_cpu, **kwargs_cpu)
-#         else:
-#             raise
-# 
+def has_enough_gpu_memory(tensors):
+    total_required = sum(get_tensor_size_in_bytes(t) for t in tensors if isinstance(t, torch.Tensor))
+    total_required_gb = total_required / (1024**3)
+    
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+        torch.cuda.empty_cache()
+        gc.collect()
+        free_mem = torch.cuda.mem_get_info()[0] / (1024**3)
+        return free_mem >= total_required_gb
+    return False
 
+def to_device(x, device):
+    if isinstance(x, torch.Tensor):
+        return x.to(device)
+    elif isinstance(x, (list, tuple)):
+        return type(x)(to_device(i, device) for i in x)
+    elif isinstance(x, dict):
+        return {k: to_device(v, device) for k, v in x.items()}
+    else:
+        return x
 
-# def try_gpu_then_cpu(fn, *args, **kwargs):
-#     try:
-#         return fn(*args, **kwargs)
-#     except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
-#         if "CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError):
-#             print(f"[OOM] Falling back to CPU for: {fn.__name__ if hasattr(fn, '__name__') else str(fn)}")
-#             torch.cuda.empty_cache()
-#             gc.collect()
+def to_numpy(x):
+    if isinstance(x, torch.Tensor):
+        return x.detach().cpu().numpy()
+    elif isinstance(x, (list, tuple)):
+        return type(x)(to_numpy(i) for i in x)
+    elif isinstance(x, dict):
+        return {k: to_numpy(v) for k, v in x.items()}
+    else:
+        return x
 
-#             def to_cpu(x):
-#                 if isinstance(x, torch.Tensor) and x.is_cuda:
-#                     return x.cpu()
-#                 elif isinstance(x, (list, tuple)):
-#                     return type(x)(to_cpu(i) for i in x)
-#                 elif isinstance(x, dict):
-#                     return {k: to_cpu(v) for k, v in x.items()}
-#                 else:
-#                     return x
+def to_tensor(x):
+    if isinstance(x, np.ndarray):
+        return torch.from_numpy(x)
+    elif isinstance(x, (list, tuple)):
+        return type(x)(to_tensor(i) for i in x)
+    elif isinstance(x, dict):
+        return {k: to_tensor(v) for k, v in x.items()}
+    else:
+        return x
 
-#             args_cpu = to_cpu(args)
-#             kwargs_cpu = to_cpu(kwargs)
-
-#             return fn(*args_cpu, **kwargs_cpu)
-#         else:
-#             raise
-
+def all_tensors(x):
+    if isinstance(x, torch.Tensor):
+        return [x]
+    elif isinstance(x, (list, tuple)):
+        return [t for i in x for t in all_tensors(i)]
+    elif isinstance(x, dict):
+        return [t for v in x.values() for t in all_tensors(v)]
+    return []
 
 def try_gpu_then_numpy(fn, *args, **kwargs):
+    all_inputs = all_tensors(args) + all_tensors(kwargs)
+    input_devices = {t.device.type for t in all_inputs if isinstance(t, torch.Tensor)}
+
+    # If mixed devices or on CPU but memory available, try GPU
     try:
+        if 'cpu' in input_devices or len(input_devices) > 1:
+            print(f"[Align] Mixed device tensors found: {input_devices}")
+            if has_enough_gpu_memory(all_inputs):
+                print("[Align] Moving all inputs to GPU.")
+                args = to_device(args, 'cuda')
+                kwargs = to_device(kwargs, 'cuda')
+            else:
+                print("[Align] Moving all inputs to CPU.")
+                args = to_device(args, 'cpu')
+                kwargs = to_device(kwargs, 'cpu')
         return fn(*args, **kwargs)
+
     except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
         if "CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError):
             print(f"[OOM] Falling back to NumPy for: {fn.__name__ if hasattr(fn, '__name__') else str(fn)}")
             torch.cuda.empty_cache()
             gc.collect()
 
-            def to_numpy(x):
-                if isinstance(x, torch.Tensor):
-                    return x.detach().cpu().numpy()
-                elif isinstance(x, (list, tuple)):
-                    return type(x)(to_numpy(i) for i in x)
-                elif isinstance(x, dict):
-                    return {k: to_numpy(v) for k, v in x.items()}
-                else:
-                    return x
-
-            def to_tensor(x):
-                if isinstance(x, np.ndarray):
-                    return torch.from_numpy(x)
-                elif isinstance(x, (list, tuple)):
-                    return type(x)(to_tensor(i) for i in x)
-                elif isinstance(x, dict):
-                    return {k: to_tensor(v) for k, v in x.items()}
-                else:
-                    return x
-
             args_np = to_numpy(args)
             kwargs_np = to_numpy(kwargs)
 
             try:
+                print("[INFO] Using NumPy fallback.")
                 result_np = fn(*args_np, **kwargs_np)
                 result_tensor = to_tensor(result_np)
+
+                try:
+                    result_tensor = result_tensor.to("cuda")
+                    print("[Recovery] Successfully moved result back to GPU.")
+                except RuntimeError:
+                    print("[Recovery] GPU move failed. Staying on CPU.")
+                    use_gpu["enabled"] = False
+
                 return result_tensor
             except Exception as e_np:
-                print(f"[ERROR] NumPy fallback also failed: {e_np}")
+                print(f"[ERROR] NumPy fallback failed: {e_np}")
                 raise e_np
         else:
             raise
 
-def safe_solve(A_left, A_right, device=None):
-    return torch.linalg.solve(A_left.to(device), A_right.to(device))
-
-
 def build_L_matrix(groupIdx, N, dtype=torch.float32, device='cuda'):
-    groupIdx = groupIdx.to(device)
-    unique_groups = torch.unique(groupIdx)
-    G = len(unique_groups)
-    group_counts = torch.stack([(groupIdx == g).sum() for g in unique_groups])
+    if isinstance (groupIdx, np.ndarray):
+        groupIdx = groupIdx.astype(np.int32)
+        unique_groups = np.unique(groupIdx)
+        G = len(unique_groups)
+        group_counts = np.array([(groupIdx == g).sum() for g in unique_groups])
 
-    L = torch.zeros((N, N), dtype=dtype, device=device)
+        L = np.zeros((N, N), dtype=np.float32)
 
-    for g, count in zip(unique_groups, group_counts):
-        idx = (groupIdx == g).nonzero(as_tuple=True)[0]
-        val = 1 / (G * count.item()**2) - 1 / (G**2 * count.item()**2)
-        L[idx.unsqueeze(1), idx] = val
+        for g, count in zip(unique_groups, group_counts):
+            idx = np.where(groupIdx == g)[0]
+            val = 1 / (G * count**2) - 1 / (G**2 * count**2)
+            L[np.ix_(idx, idx)] = val
 
-    for i, (g1, s1) in enumerate(zip(unique_groups, group_counts)):
-        for j, (g2, s2) in enumerate(zip(unique_groups, group_counts)):
-            if g1 != g2:
-                idx1 = (groupIdx == g1).nonzero(as_tuple=True)[0]
-                idx2 = (groupIdx == g2).nonzero(as_tuple=True)[0]
-                val = -1 / (G**2 * s1.item() * s2.item())
-                L[idx1.unsqueeze(1), idx2] = val
+        for i, (g1, s1) in enumerate(zip(unique_groups, group_counts)):
+            for j, (g2, s2) in enumerate(zip(unique_groups, group_counts)):
+                if g1 != g2:
+                    idx1 = np.where(groupIdx == g1)[0]
+                    idx2 = np.where(groupIdx == g2)[0]
+                    val = -1 / (G**2 * s1 * s2)
+                    L[np.ix_(idx1, idx2)] = val
+        return L
+    else:
+        groupIdx = groupIdx.to(device)
+        unique_groups = torch.unique(groupIdx)
+        G = len(unique_groups)
+        group_counts = torch.stack([(groupIdx == g).sum() for g in unique_groups])
 
-    return L
+        L = torch.zeros((N, N), dtype=dtype, device=device)
+
+        for g, count in zip(unique_groups, group_counts):
+            idx = (groupIdx == g).nonzero(as_tuple=True)[0]
+            val = 1 / (G * count.item()**2) - 1 / (G**2 * count.item()**2)
+            L[idx.unsqueeze(1), idx] = val
+
+        for i, (g1, s1) in enumerate(zip(unique_groups, group_counts)):
+            for j, (g2, s2) in enumerate(zip(unique_groups, group_counts)):
+                if g1 != g2:
+                    idx1 = (groupIdx == g1).nonzero(as_tuple=True)[0]
+                    idx2 = (groupIdx == g2).nonzero(as_tuple=True)[0]
+                    val = -1 / (G**2 * s1.item() * s2.item())
+                    L[idx1.unsqueeze(1), idx2] = val
+
+        return L
+    
+def center_kernel_blockwise(K, block_size=512, device=None):
+    if isinstance (K, np.ndarray):
+        N = K.shape[0]
+        K_mean_row = np.mean(K, axis=1, keepdims=True)
+        K_mean_col = np.mean(K, axis=0, keepdims=True)
+        K_mean_total = np.mean(K)
+
+        K_centered = np.zeros_like(K)
+
+        for i in range(0, N, block_size):
+            i_end = min(i + block_size, N)
+            for j in range(0, N, block_size):
+                j_end = min(j + block_size, N)
+
+                block = K[i:i_end, j:j_end].copy()  # copy to avoid modifying original K
+                block -= K_mean_row[i:i_end]
+                block -= K_mean_col[:, j:j_end]
+                block += K_mean_total
+                K_centered[i:i_end, j:j_end] = block
+
+        return K_centered
+    else: 
+        N = K.shape[0]
+        K_mean_row = K.mean(dim=1, keepdim=True)
+        K_mean_col = K.mean(dim=0, keepdim=True)
+        K_mean_total = K.mean()
+
+        K_centered = torch.zeros_like(K)
+
+        for i in range(0, N, block_size):
+            i_end = min(i + block_size, N)
+            for j in range(0, N, block_size):
+                j_end = min(j + block_size, N)
+
+                block = K[i:i_end, j:j_end]
+                block -= K_mean_row[i:i_end]
+                block -= K_mean_col[:, j:j_end]
+                block += K_mean_total
+                K_centered[i:i_end, j:j_end] = block
+
+        return K_centered
+
+def blockwise_mm(A, B, block_size=512, device=None):
+    """Blockwise matrix multiplication: A (n x m) @ B (m x p)"""
+    if isinstance(A, np.ndarray) and isinstance(B, np.ndarray):
+        n, m = A.shape
+        _, p = B.shape
+        result = np.zeros((n, p), dtype=A.dtype)
+
+        for i in range(0, n, block_size):
+            i_end = min(i + block_size, n)
+            for j in range(0, p, block_size):
+                j_end = min(j + block_size, p)
+                for k in range(0, m, block_size):
+                    k_end = min(k + block_size, m)
+                    result[i:i_end, j:j_end] += A[i:i_end, k:k_end] @ B[k:k_end, j:j_end]
+
+        return result
+
+    else:
+        # Assume PyTorch tensors
+        n, m = A.shape
+        _, p = B.shape
+        device = A.device
+        dtype = A.dtype
+        result = torch.zeros((n, p), device=device, dtype=dtype)
+
+        for i in range(0, n, block_size):
+            i_end = min(i + block_size, n)
+            for j in range(0, p, block_size):
+                j_end = min(j + block_size, p)
+                for k in range(0, m, block_size):
+                    k_end = min(k + block_size, m)
+                    result[i:i_end, j:j_end] += A[i:i_end, k:k_end] @ B[k:k_end, j:j_end]
+
+        return result
+
+def add_fn(a, b):
+    if isinstance(a, np.ndarray):
+        print("[INFO] Using NumPy add.")
+        return np.add(a, b)
+    else:
+        print("[INFO] Using Torch add.")
+        return torch.add(a, b)
+
+def solve_fn(a, b):
+    if isinstance(a, np.ndarray):
+        print("[INFO] Using NumPy solve.")
+        return np.linalg.solve(a, b)
+    else:
+        print("[INFO] Using Torch solve.")
+        return torch.linalg.solve(a, b)
+        
+def matmul_fn(a, b):
+    if isinstance(a, np.ndarray):
+        print("[INFO] Using NumPy matmul.")
+        return np.matmul(a, b)
+    else:
+        print("[INFO] Using Torch matmul.")
+        return torch.matmul(a, b)
+    
+def safe_eye(N, device='cuda', dtype=torch.float32):
+    def eye_fn(N):
+        try:
+            if use_gpu["enabled"] and torch.cuda.is_available():
+                print("[INFO] Using Torch eye.")
+                return torch.eye(N, dtype=dtype, device=device)
+            else:
+                raise RuntimeError("Force NumPy fallback")
+        except Exception:
+            print("[INFO] Using NumPy eye.")
+            return np.eye(N, dtype=np.float32)
+    return try_gpu_then_numpy(eye_fn, N)
+
+def safe_eigh(a):
+    if isinstance(a, np.ndarray):
+        print("[INFO] Using NumPy eigh.")
+        return np.linalg.eigh(a)
+    else:
+        print("[INFO] Using Torch eigh.")
+        return torch.linalg.eigh(a)
+def safe_eig(a):
+    if isinstance(a, np.ndarray):
+        print("[INFO] Using NumPy eig.")
+        return np.linalg.eig(a)
+    else:
+        print("[INFO] Using Torch eig.")
+        return torch.linalg.eig(a)
+    
+def safe_topk(values, k):
+    if isinstance(values, np.ndarray):
+        print("[INFO] Using NumPy topk.")
+        indices = np.argpartition(-values, k)[:k]
+        topk_vals = values[indices]
+        # Sort descending
+        sorted_idx = np.argsort(-topk_vals)
+        indices = indices[sorted_idx]
+        return topk_vals[sorted_idx], indices
+    else:
+        print("[INFO] Using Torch topk.")
+        return torch.topk(values, k)
+def safe_sqrt(x):
+    if isinstance(x, np.ndarray):
+        print("[INFO] Using NumPy sqrt.")
+        return np.sqrt(x)
+    else:
+        print("[INFO] Using Torch sqrt.")
+        return torch.sqrt(x)
+def safe_diag(x):
+    if isinstance(x, np.ndarray):
+        print("[INFO] Using NumPy diag.")
+        return np.diag(x)
+    else:
+        print("[INFO] Using Torch diag.")
+        return torch.diag(x)
