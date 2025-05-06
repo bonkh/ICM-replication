@@ -580,3 +580,10 @@ def safe_diag(x):
     else:
         print("[INFO] Using Torch diag.")
         return torch.diag(x)
+def scale_fn(x, scalar):
+    if isinstance(x, np.ndarray):
+        print("[INFO] Using NumPy scale.")
+        return x * scalar
+    else:
+        print("[INFO] Using Torch scale.")
+        return x * scalar
