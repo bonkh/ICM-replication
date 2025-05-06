@@ -157,25 +157,17 @@ def full_search(train_x, train_y, valid_x, valid_y, n_samples_per_task, n_sample
 
     """
     num_tasks = len(n_samples_per_task)
-    task_boundaries = np.cumsum(n_samples_per_task)
-
-    index_task = 0
+   
     best_subset = []
     accepted_sets = []
     accepted_mse = []
     all_sets = []
     all_pvals = []
 
-    num_s = np.sum(n_samples_per_task)
-    num_s_valid = np.sum(n_samples_per_task_valid)
     best_mse = 1e10
 
     rang = np.arange(train_x.shape[1])
-    maxevT = -10
-    maxpval = 0
-    num_accepted = 0
     current_inter = np.arange(train_x.shape[1])
-
 
     # Step 1: Statistical test on residuals from mean predictor
     # It was consider as a baseline, with using no feature
@@ -290,163 +282,123 @@ def subset(x, y, n_samples_per_task_list, delta, valid_split, use_hsic = False,
 
     return subset
 
+def greedy_search(train_x, train_y, valid_x, valid_y, n_samples_per_task, n_samples_per_task_valid, 
+                  use_hsic, alpha):
+    """
+    Perform Algorithm 2, greedy search over subsets of features.
+    Args:
+        - use_hsic: whether to use HSIC. If not, Levene test is used.
+        - alpha: level for the statistical test of equality of distributions 
+          (HSIC or Levene).
+    """
 
-
-
-def greedy_search(train_x, train_y, valid_x, valid_y, n_ex, n_ex_valid, 
-                  use_hsic, alpha, inc = 0.0):
-
+    # Initialization
+    num_tasks = len(n_samples_per_task)
     num_predictors = train_x.shape[1]
- 
+
+    # List tracks: p-values and MSE
+    all_pvals = []
+    all_mse = []
+
+    # Current subset track: selected, accepted subset
     selected = np.zeros(num_predictors)
-    accepted_subset = None
 
-    all_sets, all_pvals = [], []
-
-    n_iters = 10*num_predictors
+    # Limit for iterations
+    n_iters = 10 * num_predictors
     stay = 1
 
     pow_2 = np.array([2**i for i in np.arange(num_predictors)])
 
-    ind = 0 
-    prev_stat = 0
-
+    ind = 0
     bins = []
-   
-    #Get numbers for the mean
 
-    pred = np.mean(train_y)
-    mse_current = np.mean((pred - valid_y) ** 2)
-    residual = valid_y - pred
+    # Step 1: Statistical test on residuals from mean predictor (Only use Levene)
+    pred_baseline = np.mean(train_y)
+    residual_baseline = valid_y - pred_baseline
 
-    residTup = levene_pval(residual, n_ex_valid, n_ex_valid.size)
+    residTup = levene_pval(residual_baseline, n_samples_per_task, num_tasks)
     levene = sp.stats.levene(*residTup)
 
-    all_sets.append(np.array([]))
+    binary = np.sum(pow_2 * selected)
+    bins.append(binary)
     all_pvals.append(levene[1])
-    if all_pvals[-1]>alpha:
-      accepted_subset = np.array([])
 
-    count = 0
-    while (stay==1):
+    if all_pvals[-1] > alpha:
+        accepted_subset = np.array([])
 
-        # print(f'********Loop: {ind}**********')
-        
+    # Step 2: Loop over subsets of features
+    while stay:
         pvals_a = np.zeros(num_predictors)
         statistic_a = 1e10 * np.ones(num_predictors)
         mse_a = np.zeros(num_predictors)
 
-    
         for p in range(num_predictors):
             current_subset = np.sort(np.where(selected == 1)[0])
             regr = linear_model.LinearRegression()
 
-            print (f'Feature: {p}')
-            print (f'Current subset: {current_subset}')
-            print (f'Select: {selected}')
-            
-            if selected[p]==0:
-
-        
+            if selected[p] == 0:
                 subset_add = np.append(current_subset, p).astype(int)
-
-                print(f'selected[{p}] = 0, add p, current subset is: {subset_add}')
-                regr.fit(train_x[:,subset_add], train_y.flatten())
-                
-                pred = regr.predict(valid_x[:,subset_add])[:,np.newaxis]
-                mse_current = np.mean((pred - valid_y)**2)
+                regr.fit(train_x[:, subset_add], train_y.flatten())
+                pred = regr.predict(valid_x[:, subset_add])[:, np.newaxis]
+                mse_current = np.mean((pred - valid_y) ** 2)
                 residual = valid_y - pred
 
-                residTup = levene_pval(residual,n_ex_valid,
-                                                     n_ex_valid.size)
-                
+                residTup = levene_pval(residual, n_samples_per_task_valid, n_samples_per_task_valid.size)
                 levene = sp.stats.levene(*residTup)
 
                 pvals_a[p] = levene[1]
                 statistic_a[p] = levene[0]
                 mse_a[p] = mse_current
 
-                print(f'MSE: {mse_current} and p-value: {pvals_a[p]}')
-                all_sets.append(subset_add)
-                all_pvals.append(levene[1])
-                
-            if selected[p] == 1:
+            elif selected[p] == 1:
                 acc_rem = np.copy(selected)
                 acc_rem[p] = 0
-
                 subset_rem = np.sort(np.where(acc_rem == 1)[0])
 
-                print(f'selected[{p}] = 1, remove p, current subset is: {subset_rem}')
+                if subset_rem.size == 0:
+                    continue
 
-                if subset_rem.size ==0: continue
-                
-                regr = linear_model.LinearRegression()
-                regr.fit(train_x[:,subset_rem], train_y.flatten())
-
-                pred = regr.predict(valid_x[:,subset_rem])[:,np.newaxis]
-                mse_current = np.mean((pred - valid_y)**2)
+                regr.fit(train_x[:, subset_rem], train_y.flatten())
+                pred = regr.predict(valid_x[:, subset_rem])[:, np.newaxis]
+                mse_current = np.mean((pred - valid_y) ** 2)
                 residual = valid_y - pred
-                
-                residTup = levene_pval(residual,n_ex_valid, 
-                                                     n_ex_valid.size)
+
+                residTup = levene_pval(residual, n_samples_per_task_valid, n_samples_per_task_valid.size)
                 levene = sp.stats.levene(*residTup)
-                
+
                 pvals_a[p] = levene[1]
                 statistic_a[p] = levene[0]
                 mse_a[p] = mse_current
 
-                all_sets.append(subset_rem)
-                all_pvals.append(levene[1])
-                print(f'MSE: {mse_current} and p-value: {pvals_a[p]}')
-
         accepted = np.where(pvals_a > alpha)
-        print(f'Accepted: {accepted[0]}')
 
-        if accepted[0].size>0:
-
-            
+        if accepted[0].size > 0:
             best_mse = np.amin(mse_a[np.where(pvals_a > alpha)])
-            print(f'Best MSE: {best_mse} in {mse_a}, with  p-values {pvals_a} and alpha {alpha}'  )
-
-            already_acc = True
-
-            # print(f'Pre-Accepted: {selected[np.where(mse_a == best_mse)] }')
-            #Whyyyyyyyy? Why divide to 2? I don't get it
-            selected[np.where(mse_a == best_mse)] = \
-              (selected[np.where(mse_a == best_mse)] + 1) % 2
+            selected[np.where(mse_a == best_mse)] = (selected[np.where(mse_a == best_mse)] + 1) % 2
 
             accepted_subset = np.sort(np.where(selected == 1)[0])
-
-            print(f'Found accepted subset, the current subset is: {accepted_subset}')
-            print(f'selected become: {selected}')
             binary = np.sum(pow_2 * selected)
-   
-            if (bins==binary).any():
-                # print('end')
+
+            if binary in bins:
                 stay = 0
             bins.append(binary)
         else:
             best_pval_arg = np.argmin(statistic_a)
-
             selected[best_pval_arg] = (selected[best_pval_arg] + 1) % 2
-            # print(f'Not found the best subset, choose the feature {best_pval_arg} , selected become: {selected}')
             binary = np.sum(pow_2 * selected)
 
-            if (bins==binary).any():
-                # print(f'end')
+            if binary in bins:
                 stay = 0
             bins.append(binary)
 
-        if ind>n_iters:
-            # print(f'end')
+        if ind > n_iters:
             stay = 0
         ind += 1
 
     if accepted_subset is None:
-      all_pvals = np.array(all_pvals).flatten()
-
-      max_pvals = np.argsort(all_pvals)[-1]
-      accepted_subset = np.sort(all_sets[max_pvals])
+        all_pvals = np.array(all_pvals).flatten()
+        max_pvals = np.argsort(all_pvals)[-1]
+        accepted_subset = np.where(np.array(list(bin(bins[max_pvals])[2:].zfill(num_predictors)), dtype=int) == 1)[0]
 
     return np.array(accepted_subset)
 
@@ -470,3 +422,32 @@ def greedy_subset(x, y, n_ex, delta, valid_split, use_hsic = False):
                            n_ex_valid, use_hsic, delta)
 
     return np.array(subset)
+
+
+def lightGBM_test(x, y, n_ex, delta, valid_split, use_hsic = False):
+    import lightgbm as lgb
+    from sklearn.metrics import accuracy_score
+    from sklearn.metrics import mean_squared_error
+    import matplotlib.pyplot as plt
+
+    # 3. Train LightGBM model
+    train_x, train_y, valid_x, valid_y, n_ex_train, n_ex_valid = split_train_valid(x, y, n_ex, valid_split)
+    lgb_train = lgb.Dataset(train_x, train_y)
+    lgb_eval = lgb.Dataset(valid_x, valid_y, reference=lgb_train)
+
+    params = {
+        'objective': 'regression',
+        'metric': 'rmse',
+        'verbosity': -1
+    }
+
+    model = lgb.train(params, lgb_train, valid_sets=[lgb_eval], num_boost_round=100)
+    y_pred = model.predict(valid_x)
+    print("Light GBM predictions:")
+    print("MSE:", mean_squared_error(valid_y, y_pred))
+
+    # # 5. Plot feature importance
+    # lgb.plot_importance(model, max_num_features=10, importance_type='gain')  # 'split' or 'gain'
+    # plt.title("Feature Importance")
+    # plt.show()
+
