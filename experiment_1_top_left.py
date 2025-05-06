@@ -245,33 +245,36 @@ for rep in range(n_repeat):
     epsilon = 1e-3
     m = 2
 
-    V, D, Z_train, Z_test = dica_torch(
-    Kx_path = Kx_path, 
-    Ky_path = Ky_path, 
-    Kt_path = Kt_path, 
-    N = N,
-    Nt = x_test.shape[0],
-    groupIdx_path = domain_idx_path, 
-    lambd=lambda_, 
-    epsilon=epsilon, 
-    M=m
-    )
+    # V, D, Z_train, Z_test = dica_torch(
+    # Kx_path = Kx_path, 
+    # Ky_path = Ky_path, 
+    # Kt_path = Kt_path, 
+    # N = N,
+    # Nt = x_test.shape[0],
+    # groupIdx_path = domain_idx_path, 
+    # lambd=lambda_, 
+    # epsilon=epsilon, 
+    # M=m
+    # )
 
-    # V, D, Z_train, Z_test = dica(
-    #   Kx_path = Kx_path, 
-    #   Ky_path = Ky_path, 
-    #   Kt_path = Kt_path, 
-    #   groupIdx = domain_idx, 
-    #   lambd = lambda_, 
-    #   epsilon = epsilon, 
-    #   M = m
-    #   )
+    # Z_train = Z_train.T.cpu().numpy()
+    # Z_test = Z_test.T.cpu().numpy()
 
-    # Z_train = Z_train.T
-    # Z_test = Z_test.T
 
-    Z_train = Z_train.T.cpu().numpy()
-    Z_test = Z_test.T.cpu().numpy()
+    V, D, Z_train, Z_test = dica(
+      Kx_path = Kx_path, 
+      Ky_path = Ky_path, 
+      Kt_path = Kt_path,
+      N = N,
+      Nt = x_test.shape[0],
+      groupIdx_path = domain_idx_path,
+      lambd = lambda_, 
+      epsilon = epsilon, 
+      M = m
+      )
+
+    Z_train = Z_train.T
+    Z_test = Z_test.T
 
 
     reg_dica = linear_model.LinearRegression()

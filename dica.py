@@ -10,9 +10,7 @@ import gc
 
 
 
-
-def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
-    """
+"""
     DICA - Domain-Invariant Component Analysis
 
     Parameters
@@ -43,9 +41,12 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
     Xt : (M, Nt) ndarray
         Projection of test data.
     """
-
-    N = Kx.shape[0]
-    Nt = Kt.shape[0] if Kt is not None else 0
+def dica(Kx_path, Ky_path, Kt_path,N, Nt, groupIdx_path, lambd, epsilon, M):
+    
+    Kx = np.memmap(Kx_path, dtype='float32', mode='r', shape=(N, N))
+    Ky = np.memmap(Ky_path, dtype='float32', mode='r', shape=(N, N))
+    Kt = np.memmap(Kt_path, dtype='float32', mode='r', shape=(Nt, N))
+    groupIdx = np.memmap(groupIdx_path, dtype='int32', mode='r', shape=(N,))
 
     if Kx.shape != (N, N) or Ky.shape != (N, N):
         raise ValueError("Kx and Ky must be square matrices of the same size.")
@@ -62,11 +63,11 @@ def dica(Kx, Ky, Kt, groupIdx, lambd, epsilon, M):
 
     # Center kernel matrices
     # Ky = H @ Ky @ H
-    Ky_path = 'Experiment_01_top_left/Ky.dat'
+    # Ky_path = 'Experiment_01_top_left/Ky.dat'
     Ky_centered_path = center_kernel_memmap(Ky_path, shape=(N, N))
 
     # Kx = H @ Kx @ H
-    Kx_path = 'Experiment_01_top_left/Kx.dat'
+    # Kx_path = 'Experiment_01_top_left/Kx.dat'
     Kx_centered_path = center_kernel_memmap(Kx_path, shape=(N, N))
 
     # Calculate A left
@@ -277,7 +278,7 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
 
     Kx_Kx = try_gpu_then_cpu( lambda: blockwise_mm( Kx, Kx, block_size=512))
 
-    eye_N = try_gpu_then_cpu(lambda: torch.eye(N, device=device, dtype=Kx.dtype))
+    eye_N = try_gpu_then_cpu(lambda: torch.eye(N, dtype=Kx.dtype))
     A_left = try_gpu_then_cpu(lambda: Kx_L_Kx + Kx)
     A_left = try_gpu_then_cpu(lambda: A_left + lambd * eye_N)
     
