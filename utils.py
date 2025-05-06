@@ -546,13 +546,25 @@ def safe_eigh(a):
         print("[INFO] Using Torch eigh.")
         return torch.linalg.eigh(a)
     
+# def safe_eig(a):
+#     if isinstance(a, np.ndarray):
+#         print("[INFO] Using NumPy eig.")
+#         return np.linalg.eig(a)
+#     else:
+#         print("[INFO] Using Torch eig.")
+#         return torch.linalg.eig(a)
 def safe_eig(a):
     if isinstance(a, np.ndarray):
         print("[INFO] Using NumPy eig.")
         return np.linalg.eig(a)
-    else:
-        print("[INFO] Using Torch eig.")
+    try:
+        print("[INFO] Using Torch eig on GPU.")
         return torch.linalg.eig(a)
+    except RuntimeError as e:
+        print("[WARNING] Torch eig on GPU failed, switching to CPU:", e)
+        a_cpu = a.detach().cpu()
+        return torch.linalg.eig(a_cpu)
+
     
 def safe_topk(values, k):
     if isinstance(values, np.ndarray):
@@ -587,3 +599,15 @@ def scale_fn(x, scalar):
     else:
         print("[INFO] Using Torch scale.")
         return x * scalar
+    
+def safe_ones(shape, device=None, dtype=torch.float32):
+    if use_gpu.get("enabled", True) and torch.cuda.is_available():
+        try:
+            return torch.ones(shape, device=device, dtype=dtype)
+        except RuntimeError as e:
+            if "CUDA out of memory" in str(e):
+                print("[OOM] Falling back to NumPy for safe_ones.")
+                use_gpu["enabled"] = False
+            else:
+                raise
+    return np.ones(shape, dtype=np.float32)  # NumPy fallback

@@ -310,7 +310,10 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     del eye_scaled
     gc.collect()
 
-    Ky_eps = try_gpu_then_numpy(add_fn, Ky, N * epsilon * eye_N)
+    eye_scaled = try_gpu_then_numpy(scale_fn, eye_N, N * epsilon)
+    Ky_eps = try_gpu_then_numpy(add_fn, Ky, eye_scaled)
+    del eye_scaled
+    gc.collect()
 
     mid = try_gpu_then_numpy(solve_fn, Ky_eps, Kx_Kx)
     A_right = try_gpu_then_numpy(matmul_fn, Ky, mid)
@@ -365,13 +368,23 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     gc.collect()
 
     if Kt is not None and Nt > 0:
-        Ht = torch.eye(Nt, device=device) - torch.ones((Nt, Nt), device=device) / Nt
-        Kt_c = Ht @ Kt @ H
+        eye_Nt = safe_eye(Nt, device=device, dtype=Kt.dtype)
+        ones_Nt = try_gpu_then_numpy(safe_ones, (Nt, Nt), device=device, dtype=Kt.dtype)
+        scaled_ones = try_gpu_then_numpy(scale_fn, ones_Nt, 1.0 / Nt)
+        del ones_N
+        Ht = try_gpu_then_numpy(add_fn, eye_Nt, -scaled_ones)  # Ht = I - 1/N * 1_1^T
+        del eye_Nt, scaled_ones
+        # Ht = torch.eye(Nt, device=device) - torch.ones((Nt, Nt), device=device) / Nt
+        # Kt_c = Ht @ Kt @ H
+        Ht_Kt = try_gpu_then_numpy(matmul_fn, Ht, Kt)
+        del Ht, Kt
+        Kt_c = try_gpu_then_numpy(matmul_fn, Ht_Kt, H)
+        del Ht_Kt, H 
         # Xt = V.T @ Kt_c.T
         Xt = try_gpu_then_numpy(matmul_fn, V.T, Kt_c.T)
         # Xt = try_gpu_then_numpy(lambda: torch.matmul(V.T, Kt_c.T))
 
-        del Ht, Kt, Kt_c
+        del Kt_c
 
     else:
         Xt = None
