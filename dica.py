@@ -231,10 +231,7 @@ def project_test_kernel(Kt, B, K_train):
 def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, M, dtype='float32'):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    # Convert NumPy inputs to GPU tensors
     Kx = torch.from_numpy(np.memmap(Kx_path, dtype=dtype, mode='r', shape=(N, N)).copy()).to(device)
-
     Ky = torch.from_numpy(np.memmap(Ky_path, dtype=dtype, mode='r', shape=(N, N)).copy()).to(device)
     Kt = torch.from_numpy(np.memmap(Kt_path, dtype=dtype, mode='r', shape=(Nt, N)).copy()).to(device)
     groupIdx = torch.from_numpy(np.memmap(groupIdx_path, dtype='int32', mode='r', shape=(N,)).copy()).to(device)

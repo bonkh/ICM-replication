@@ -444,93 +444,77 @@ def center_kernel_blockwise(K, block_size=512, device=None):
 #             return fn(*args_cpu, **kwargs_cpu)
 #         else:
 #             raise
-# def try_gpu_then_cpu(fn, *args, **kwargs):
-#     def to_cpu(x):
-#         return x.cpu() if isinstance(x, torch.Tensor) and x.is_cuda else x
+# 
 
+
+# def try_gpu_then_cpu(fn, *args, **kwargs):
 #     try:
 #         return fn(*args, **kwargs)
 #     except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
 #         if "CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError):
-#             print(f"[OOM] Falling back to CPU for: {fn.__name__}")
-#             torch.cuda.empty_cache()
-#             gc.collect()
-#             args_cpu = tuple(to_cpu(a) for a in args)
-#             kwargs_cpu = {k: to_cpu(v) for k, v in kwargs.items()}
-#             return fn(*args_cpu, **kwargs_cpu)
-#         raise
-# def try_gpu_then_cpu(expr_fn):
-#     try:
-#         return expr_fn()
-#     except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
-#         if "CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError):
-#             print(f"[OOM] Falling back to CPU for: {expr_fn}")
+#             print(f"[OOM] Falling back to CPU for: {fn.__name__ if hasattr(fn, '__name__') else str(fn)}")
 #             torch.cuda.empty_cache()
 #             gc.collect()
 
 #             def to_cpu(x):
-#                 return x.cpu() if isinstance(x, torch.Tensor) and x.is_cuda else x
+#                 if isinstance(x, torch.Tensor) and x.is_cuda:
+#                     return x.cpu()
+#                 elif isinstance(x, (list, tuple)):
+#                     return type(x)(to_cpu(i) for i in x)
+#                 elif isinstance(x, dict):
+#                     return {k: to_cpu(v) for k, v in x.items()}
+#                 else:
+#                     return x
 
-#             # Manually walk through closure variables
-#             if hasattr(expr_fn, '__closure__') and expr_fn.__closure__:
-#                 for cell in expr_fn.__closure__:
-#                     val = cell.cell_contents
-#                     if isinstance(val, torch.Tensor) and val.is_cuda:
-#                         val_cpu = val.cpu()
-#                         try:
-#                             cell.cell_contents = val_cpu  # may fail, Python limitation
-#                         except:
-#                             pass
+#             args_cpu = to_cpu(args)
+#             kwargs_cpu = to_cpu(kwargs)
 
-#             return expr_fn()
-#         else:
-#             raise
-# def try_gpu_then_cpu(expr_fn, *args, **kwargs):
-#     def to_cpu(x):
-#         return x.cpu() if isinstance(x, torch.Tensor) and x.is_cuda else x
-
-#     try:
-#         return expr_fn(*args, **kwargs)
-#     except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
-#         if "CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError):
-#             print(f"[OOM] Falling back to CPU for: {expr_fn.__name__ if hasattr(expr_fn, '__name__') else expr_fn}")
-#             torch.cuda.empty_cache()
-#             gc.collect()
-
-#             args_cpu = tuple(to_cpu(a) for a in args)
-#             kwargs_cpu = {k: to_cpu(v) for k, v in kwargs.items()}
-#             return expr_fn(*args_cpu, **kwargs_cpu)
+#             return fn(*args_cpu, **kwargs_cpu)
 #         else:
 #             raise
 
 
-def try_gpu_then_cpu(fn, *args, **kwargs):
+def try_gpu_then_numpy(fn, *args, **kwargs):
     try:
         return fn(*args, **kwargs)
     except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
         if "CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError):
-            print(f"[OOM] Falling back to CPU for: {fn.__name__ if hasattr(fn, '__name__') else str(fn)}")
+            print(f"[OOM] Falling back to NumPy for: {fn.__name__ if hasattr(fn, '__name__') else str(fn)}")
             torch.cuda.empty_cache()
             gc.collect()
 
-            def to_cpu(x):
-                if isinstance(x, torch.Tensor) and x.is_cuda:
-                    return x.cpu()
+            def to_numpy(x):
+                if isinstance(x, torch.Tensor):
+                    return x.detach().cpu().numpy()
                 elif isinstance(x, (list, tuple)):
-                    return type(x)(to_cpu(i) for i in x)
+                    return type(x)(to_numpy(i) for i in x)
                 elif isinstance(x, dict):
-                    return {k: to_cpu(v) for k, v in x.items()}
+                    return {k: to_numpy(v) for k, v in x.items()}
                 else:
                     return x
 
-            args_cpu = to_cpu(args)
-            kwargs_cpu = to_cpu(kwargs)
+            def to_tensor(x):
+                if isinstance(x, np.ndarray):
+                    return torch.from_numpy(x)
+                elif isinstance(x, (list, tuple)):
+                    return type(x)(to_tensor(i) for i in x)
+                elif isinstance(x, dict):
+                    return {k: to_tensor(v) for k, v in x.items()}
+                else:
+                    return x
 
-            return fn(*args_cpu, **kwargs_cpu)
+            args_np = to_numpy(args)
+            kwargs_np = to_numpy(kwargs)
+
+            try:
+                result_np = fn(*args_np, **kwargs_np)
+                result_tensor = to_tensor(result_np)
+                return result_tensor
+            except Exception as e_np:
+                print(f"[ERROR] NumPy fallback also failed: {e_np}")
+                raise e_np
         else:
             raise
-
-
 
 def safe_solve(A_left, A_right, device=None):
     return torch.linalg.solve(A_left.to(device), A_right.to(device))
