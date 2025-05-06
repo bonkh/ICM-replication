@@ -327,7 +327,7 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     else:
         # eigvals, eigvecs = torch.linalg.eig(A)
         # eigvals, eigvecs = try_gpu_then_cpu(lambda: torch.linalg.eig(A))
-        eigvals, eigvecs = try_gpu_then_numpy(safe_eigh, A)
+        eigvals, eigvecs = try_gpu_then_numpy(safe_eig, A)
         eigvals = eigvals.real
         eigvecs = eigvecs.real
         # _, indices = torch.topk(eigvals, M)
