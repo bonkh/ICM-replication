@@ -545,6 +545,7 @@ def safe_eigh(a):
     else:
         print("[INFO] Using Torch eigh.")
         return torch.linalg.eigh(a)
+    
 def safe_eig(a):
     if isinstance(a, np.ndarray):
         print("[INFO] Using NumPy eig.")
