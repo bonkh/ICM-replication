@@ -6,7 +6,7 @@ from sklearn.linear_model import LinearRegression
 
 from sklearn.metrics.pairwise import rbf_kernel
 # from dica import *
-from dica_gpu import *
+# from dica_gpu import *
 
 
 from sklearn.linear_model import Ridge
@@ -38,68 +38,65 @@ delta = 0.05
 
 # Generate training tasks
 
-for task in range(n_tasks):
-    gamma_task = np.random.uniform(-1,1)
-    x1 = np.random.normal(0, sx1, (n_samples_per_task, 1))
-    x3 = np.random.normal(0, sx3, (n_samples_per_task, 1))
-    y = alpha[0] * x1 + alpha[1] * x3 + np.random.normal(0, sigma, (n_samples_per_task, 1))
+# for task in range(n_tasks):
+#     gamma_task = np.random.uniform(-1,1)
+#     x1 = np.random.normal(0, sx1, (n_samples_per_task, 1))
+#     x3 = np.random.normal(0, sx3, (n_samples_per_task, 1))
+#     y = alpha[0] * x1 + alpha[1] * x3 + np.random.normal(0, sigma, (n_samples_per_task, 1))
 
-    x2 = gamma_task*y + np.random.normal(0, sx2, (n_samples_per_task, 1))
+#     x2 = gamma_task*y + np.random.normal(0, sx2, (n_samples_per_task, 1))
 
-    x_task = np.concatenate([x1, x2, x3],axis = 1)
-    train_x = np.append(train_x, x_task, axis = 0)
-    train_y = np.append(train_y, y)
-    n_ex.append(n_samples_per_task)
+#     x_task = np.concatenate([x1, x2, x3],axis = 1)
+#     train_x = np.append(train_x, x_task, axis = 0)
+#     train_y = np.append(train_y, y)
+#     n_ex.append(n_samples_per_task)
 
-    print(n_ex)
-
-print(train_x.shape)
-
-n_ex = np.array(n_ex)
-train_x =  train_x[1:, :]
-train_y = train_y[1:, np.newaxis]
-
-# Generate test tasks
-test_x = np.zeros((1, n_predictors))
-test_y = np.zeros(1)
-
-for task in range (n_test_tasks):
-    gamma_task = np.random.uniform(-1, 1)
-    x1 = np.random.normal(0, sx1, (n_samples_per_task, 1))
-    x3 = np.random.normal(0, sx3, (n_samples_per_task, 1))
-    y = alpha[0]*x1 + alpha[1]*x3 + np.random.normal(0, sigma, (n_samples_per_task,1))
-
-    x2 = gamma_task*y + np.random.normal(0,sx2,(n_samples_per_task,1))
-
-    x_task = np.concatenate([x1, x2, x3],axis = 1)
-    test_x = np.append(test_x, x_task, axis = 0)
-    test_y = np.append(test_y, y)
-
-
-test_x = test_x[1:,:]
-test_y = test_y[1:,np.newaxis]
-
-# import scipy.io
-
-# data = scipy.io.loadmat('dataset.mat')
-
-# train_x = data['train_x']
-# train_y = data['train_y']
-# test_x = data['test_x']
-# test_y = data['test_y']
-# n_ex = data['n_ex'].flatten()  # Flatten về vector 1D nếu cần
+#     print(n_ex)
 
 # print(train_x.shape)
-# print(train_y.shape)
-# print(test_x.shape)
-# print(test_y.shape)
-# print(n_ex)
+
+# n_ex = np.array(n_ex)
+# train_x =  train_x[1:, :]
+# train_y = train_y[1:, np.newaxis]
+
+# # Generate test tasks
+# test_x = np.zeros((1, n_predictors))
+# test_y = np.zeros(1)
+
+# for task in range (n_test_tasks):
+#     gamma_task = np.random.uniform(-1, 1)
+#     x1 = np.random.normal(0, sx1, (n_samples_per_task, 1))
+#     x3 = np.random.normal(0, sx3, (n_samples_per_task, 1))
+#     y = alpha[0]*x1 + alpha[1]*x3 + np.random.normal(0, sigma, (n_samples_per_task,1))
+
+#     x2 = gamma_task*y + np.random.normal(0,sx2,(n_samples_per_task,1))
+
+#     x_task = np.concatenate([x1, x2, x3],axis = 1)
+#     test_x = np.append(test_x, x_task, axis = 0)
+#     test_y = np.append(test_y, y)
 
 
-s_hat = subset(train_x, train_y, n_ex, valid_split=0.5, 
-                             delta=0.05, use_hsic=use_hsic)
+# test_x = test_x[1:,:]
+# test_y = test_y[1:,np.newaxis]
 
-print(f'S_HAT{s_hat}')
+import scipy.io
+
+data = scipy.io.loadmat('dataset.mat')
+
+train_x = data['train_x']
+train_y = data['train_y']
+test_x = data['test_x']
+test_y = data['test_y']
+n_ex = data['n_ex'].flatten()  # Flatten về vector 1D nếu cần
+
+print(train_x.shape)
+print(train_y.shape)
+print(test_x.shape)
+print(test_y.shape)
+print(n_ex)
+
+
+
 
 domain_idx = []
 for domain, n in enumerate(n_ex):
@@ -138,89 +135,103 @@ m = 2  # Number of components to keep
 
 import time
 
-start_time = time.time()
+# start_time = time.time()
 
-V, D, Z_train, Z_test = dica_gpu(Kx=Kx, Ky=Ky, Kt=Kt, groupIdx=domain_idx, lambd=lambda_, epsilon=epsilon, M=m)
+# V, D, Z_train, Z_test = dica_gpu(Kx=Kx, Ky=Ky, Kt=Kt, groupIdx=domain_idx, lambd=lambda_, epsilon=epsilon, M=m)
+
+# end_time = time.time()
+# print(f"Execution time: {end_time - start_time:.4f} seconds")
+
+# print(f'X train: {train_x.shape}')
+# print(f'Z train {Z_train.shape}')
+
+# print(f'X test: {test_x.shape}')
+# print(f'Z test: {Z_test.shape}')
+
+# Z_train = Z_train.T
+# Z_test = Z_test.T
+
+
+# ----------- 1. Raw features (no transformation) ----------------
+reg_raw = LinearRegression()
+reg_raw.fit(train_x, train_y)
+preds_raw = reg_raw.predict(test_x)
+mse_raw = mean_squared_error(test_y, preds_raw)
+print(f"Raw feature MSE: {mse_raw:.4f}")
+
+# ----------- 2. Causal subset features using s_hat -------------
+
+start_time = time.time()
+s_hat = subset(train_x, train_y, n_ex, valid_split=0.5, 
+                             delta=0.05, use_hsic=use_hsic)
 
 end_time = time.time()
 print(f"Execution time: {end_time - start_time:.4f} seconds")
+print(f'S_HAT{s_hat}')
 
-print(f'X train: {train_x.shape}')
-print(f'Z train {Z_train.shape}')
+                             
+train_x_s = train_x[:, s_hat]
+test_x_s = test_x[:, s_hat]
 
-print(f'X test: {test_x.shape}')
-print(f'Z test: {Z_test.shape}')
-
-Z_train = Z_train.T
-Z_test = Z_test.T
-
-
-# # ----------- 1. Raw features (no transformation) ----------------
-# reg_raw = LinearRegression()
-# reg_raw.fit(train_x, train_y)
-# preds_raw = reg_raw.predict(test_x)
-# mse_raw = mean_squared_error(test_y, preds_raw)
-# print(f"Raw feature MSE: {mse_raw:.4f}")
-
-# # ----------- 2. Causal subset features using s_hat -------------
-# train_x_s = train_x[:, s_hat]
-# test_x_s = test_x[:, s_hat]
-
-# reg_subset = LinearRegression()
-# reg_subset.fit(train_x_s, train_y)
-# preds_subset = reg_subset.predict(test_x_s)
-# mse_subset = mean_squared_error(test_y, preds_subset)
-# print(f"Causal subset (s_hat) MSE: {mse_subset:.4f}")
+reg_subset = LinearRegression()
+reg_subset.fit(train_x_s, train_y)
+preds_subset = reg_subset.predict(test_x_s)
+mse_subset = mean_squared_error(test_y, preds_subset)
+print(f"Causal subset (s_hat) MSE: {mse_subset:.4f}")
 
 
 # #-------------Greedy subset---------------
-# print("Greedy subset search")
-# s_hat_greedy = greedy_subset(train_x, train_y, n_ex, valid_split=0.5, 
-#                              delta=0.05, use_hsic=use_hsic)
+print("Greedy subset search")
+start_time = time.time()
+s_hat_greedy = greedy_subset(train_x, train_y, n_ex, valid_split=0.5, 
+                             delta=0.05, use_hsic=use_hsic)
+end_time = time.time()
+print(f"Execution time: {end_time - start_time:.4f} seconds")
 
-# print(f'Greedy subset: {s_hat_greedy}')
+print(f'Greedy subset: {s_hat_greedy}')
 
-# train_x_greedy_s = train_x[:, s_hat_greedy]
-# test_x_greedy_s = test_x[:, s_hat_greedy]
+train_x_greedy_s = train_x[:, s_hat_greedy]
+test_x_greedy_s = test_x[:, s_hat_greedy]
 
-# reg_greedy_subset = LinearRegression()
-# reg_greedy_subset.fit(train_x_greedy_s, train_y)
-# preds_greedy_subset = reg_greedy_subset.predict(test_x_greedy_s)
-# mse_greedy_subset = mean_squared_error(test_y, preds_greedy_subset)
-# print(f"Raw feature MSE: {mse_raw:.4f}")
-# print(f"Causal subset (s_hat) MSE: {mse_subset:.4f}")
+reg_greedy_subset = LinearRegression()
+reg_greedy_subset.fit(train_x_greedy_s, train_y)
+preds_greedy_subset = reg_greedy_subset.predict(test_x_greedy_s)
+mse_greedy_subset = mean_squared_error(test_y, preds_greedy_subset)
+print(f"Raw feature MSE: {mse_raw:.4f}")
+print(f"Causal subset (s_hat) MSE: {mse_subset:.4f}")
+print(f"Greedy subset (s_hat) MSE: {mse_greedy_subset:.4f}")
 
-# print(f"Greedy subset (s_hat) MSE: {mse_greedy_subset:.4f}")
 
-
+lightGBM_test(train_x, train_y, n_ex, valid_split=0.5, 
+                             delta=0.05, use_hsic=use_hsic)
 
 
 # ----------- 3. DICA-transformed features -----------------------
 # Nhớ rằng: X = V.T @ Kx_c → (m, N), Xt = V.T @ Kt_c.T → (m, Nt)
 
 
-reg_dica = LinearRegression()
-reg_dica.fit(Z_train, train_y)   # Z_train
-preds_dica = reg_dica.predict(Z_test)  # Z_test
-mse_dica = mean_squared_error(test_y, preds_dica)
-print(f"DICA generalization MSE: {mse_dica:.4f}")
+# reg_dica = LinearRegression()
+# reg_dica.fit(Z_train, train_y)   # Z_train
+# preds_dica = reg_dica.predict(Z_test)  # Z_test
+# mse_dica = mean_squared_error(test_y, preds_dica)
+# print(f"DICA generalization MSE: {mse_dica:.4f}")
 
 
-B, K = dica_projection_gpu(train_x, train_y, domain_idx, lambda_=1.0, epsilon=1e-3, m=5)
+# B, K = dica_projection_gpu(train_x, train_y, domain_idx, lambda_=1.0, epsilon=1e-3, m=5)
 
-# Project training kernel to domain-invariant space
-K_proj = project_kernel_gpu(K, B)
+# # Project training kernel to domain-invariant space
+# K_proj = project_kernel_gpu(K, B)
 
-# Compute test kernel
-Kt = rbf_kernel(test_x, train_x, gamma=1.0 / train_x.shape[1])
+# # Compute test kernel
+# Kt = rbf_kernel(test_x, train_x, gamma=1.0 / train_x.shape[1])
 
-# Project test kernel
-Kt_proj = project_test_kernel_gpu(Kt, B, K)
+# # Project test kernel
+# Kt_proj = project_test_kernel_gpu(Kt, B, K)
 
 # Optionally use Ridge regression
 
-reg = LinearRegression()
-reg.fit(K_proj, train_y)
-preds = reg.predict(Kt_proj)
-mse_dica_2 = mean_squared_error(test_y, preds)
-print(f"DICA generalization MSE 2: {mse_dica_2:.4f}")
+# reg = LinearRegression()
+# reg.fit(K_proj, train_y)
+# preds = reg.predict(Kt_proj)
+# mse_dica_2 = mean_squared_error(test_y, preds)
+# print(f"DICA generalization MSE 2: {mse_dica_2:.4f}")
