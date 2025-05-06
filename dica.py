@@ -63,11 +63,9 @@ def dica(Kx_path, Ky_path, Kt_path,N, Nt, groupIdx_path, lambd, epsilon, M):
 
     # Center kernel matrices
     # Ky = H @ Ky @ H
-    # Ky_path = 'Experiment_01_top_left/Ky.dat'
     Ky_centered_path = center_kernel_memmap(Ky_path, shape=(N, N))
 
     # Kx = H @ Kx @ H
-    # Kx_path = 'Experiment_01_top_left/Kx.dat'
     Kx_centered_path = center_kernel_memmap(Kx_path, shape=(N, N))
 
     # Calculate A left
@@ -94,7 +92,9 @@ def dica(Kx_path, Ky_path, Kt_path,N, Nt, groupIdx_path, lambd, epsilon, M):
     for i in range(0, N, block_size):
         i_end = min(i + block_size, N)
 
-        rhs_block = Kx @ Kx[:, i:i_end]
+        # rhs_block = Kx @ Kx[:, i:i_end]
+        rhs_block = np.dot(Kx, Kx[:, i:i_end])
+
 
         # Solve the linear system
         mid[:, i:i_end] = solve(Ky_eps, rhs_block)
@@ -141,6 +141,12 @@ def dica(Kx_path, Ky_path, Kt_path,N, Nt, groupIdx_path, lambd, epsilon, M):
 
     eigvals = np.real(eigvals)
     eigvecs = np.real(eigvecs)
+
+
+    positive_idx = eigvals > 1e-8  # tránh các trị gần 0
+    eigvals = eigvals[positive_idx]
+    eigvecs = eigvecs[:, positive_idx]
+
 
     for i in range(M):
         eigvecs[:, i] /= np.sqrt(eigvals[i])
