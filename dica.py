@@ -247,7 +247,8 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     ones_divided = safe_divide(ones, N)
     del ones
     ones_divided = ones_divided.to(I.device)
-    H = I - ones_divided
+    # H = I - ones_divided
+    H = safe_subtract(I, ones_divided)
 
     del ones_divided, I
     torch.cuda.empty_cache()
@@ -315,7 +316,8 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
 
     sqrt_vals = try_gpu_safe(safe_sqrt, eigvals)
     sqrt_vals = sqrt_vals.to(eigvecs.device)
-    eigvecs = eigvecs / sqrt_vals.unsqueeze(0)
+    # eigvecs = eigvecs / sqrt_vals.unsqueeze(0)
+    eigvecs = safe_divide(eigvecs, sqrt_vals, unsqueeze_dim=0)
 
 
     V = eigvecs

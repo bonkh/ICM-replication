@@ -651,3 +651,34 @@ def safe_divide(tensor, value):
         print("[INFO] GPU out of memory during division, switching to CPU:", e)
         # Fallback to CPU if GPU allocation fails
         return tensor.to('cpu') / value
+
+def safe_subtract(a, b):
+    try:
+        return a - b
+    except RuntimeError as e:
+        if "CUDA out of memory" in str(e):
+            print("[OOM] Falling back to CPU for subtraction.")
+            a_cpu = a.detach().cpu()
+            b_cpu = b.detach().cpu()
+            result = a_cpu - b_cpu
+            return result.to(a.device)
+        else:
+            raise
+
+def safe_divide(a, b, unsqueeze_dim=None):
+    try:
+        if unsqueeze_dim is not None:
+            b = b.unsqueeze(unsqueeze_dim)
+        b = b.to(a.device)
+        return a / b
+    except RuntimeError as e:
+        if "CUDA out of memory" in str(e):
+            print("[OOM] Falling back to CPU for division.")
+            a_cpu = a.detach().cpu()
+            b_cpu = b.detach().cpu()
+            if unsqueeze_dim is not None:
+                b_cpu = b_cpu.unsqueeze(unsqueeze_dim)
+            result = a_cpu / b_cpu
+            return result.to(a.device)
+        else:
+            raise
