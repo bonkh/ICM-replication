@@ -246,7 +246,7 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     ones = safe_ones((N, N))
     ones_divided = safe_divide(ones, N)
     del ones
-    ones_divided = ones_divided.to(I.device)
+    # ones_divided = ones_divided.to(I.device)
     # H = I - ones_divided
     H = safe_subtract(I, ones_divided)
 
