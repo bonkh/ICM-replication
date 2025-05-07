@@ -652,37 +652,15 @@ def safe_divide(tensor, value):
         # Fallback to CPU if GPU allocation fails
         return tensor.to('cpu') / value
 
-def safe_subtract(a, b):
-    try:
-        return a - b
-    except RuntimeError as e:
-        if "CUDA out of memory" in str(e):
-            print("[OOM] Falling back to CPU for subtraction.")
-            a_cpu = a.detach().cpu()
-            b_cpu = b.detach().cpu()
-            result = a_cpu - b_cpu
-            return result.to(a.device)
-        else:
-            raise
+def subtract_fn(a, b):
+    return a - b
+def divide_fn(a, b, unsqueeze_dim=None):
+    if not torch.is_tensor(b):
+        b = torch.tensor(b, dtype=a.dtype, device=a.device)
+    else:
+        b = b.to(a.device)
 
-def safe_divide(a, b, unsqueeze_dim=None):
-    try:
-        if not torch.is_tensor(b):
-            b = torch.tensor(b, dtype=a.dtype, device=a.device)
-        else:
-            b = b.to(a.device)
-        if unsqueeze_dim is not None:
-            b = b.unsqueeze(unsqueeze_dim)
-        return a / b
-    except RuntimeError as e:
-        if "CUDA out of memory" in str(e):
-            print("[OOM] Falling back to CPU for division.")
-            a_cpu = a.detach().cpu()
-            b_cpu = b.detach().cpu() if torch.is_tensor(b) else torch.tensor(b, dtype=a.dtype)
-            if unsqueeze_dim is not None:
-                b_cpu = b_cpu.unsqueeze(unsqueeze_dim)
-            result = a_cpu / b_cpu
-            return result.to(a.device)
-        else:
-            raise
+    if unsqueeze_dim is not None:
+        b = b.unsqueeze(unsqueeze_dim)
 
+    return a / b
