@@ -634,3 +634,12 @@ def safe_ones(shape, dtype=torch.float32):
     except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
         print(f"[WARNING] Torch ones on GPU failed, switching to CPU: {e}")
         return torch.ones(shape, device='cpu', dtype=dtype)
+    
+def safe_unique(tensor):
+    try:
+        print("[INFO] Using Torch unique.")
+        return torch.unique(tensor)
+    except RuntimeError as e:
+        print(f"[WARNING] Torch unique failed, switching to CPU: {e}")
+        tensor_cpu = tensor.detach().cpu()
+        return torch.unique(tensor_cpu)
