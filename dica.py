@@ -371,7 +371,7 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
         eye_Nt = safe_eye(Nt, device=device, dtype=Kt.dtype)
         ones_Nt = try_gpu_then_numpy(safe_ones, (Nt, Nt), device=device, dtype=Kt.dtype)
         scaled_ones = try_gpu_then_numpy(scale_fn, ones_Nt, 1.0 / Nt)
-        del ones_N
+        del ones_Nt
         Ht = try_gpu_then_numpy(add_fn, eye_Nt, -scaled_ones)  # Ht = I - 1/N * 1_1^T
         del eye_Nt, scaled_ones
         # Ht = torch.eye(Nt, device=device) - torch.ones((Nt, Nt), device=device) / Nt
