@@ -337,6 +337,7 @@ def try_gpu_then_numpy(fn, *args, **kwargs):
     all_inputs = all_tensors(args) + all_tensors(kwargs)
     input_devices = {t.device.type for t in all_inputs if isinstance(t, torch.Tensor)}
 
+
     # If mixed devices or on CPU but memory available, try GPU
     try:
         if 'cpu' in input_devices or len(input_devices) > 1:
@@ -378,6 +379,36 @@ def try_gpu_then_numpy(fn, *args, **kwargs):
                 raise e_np
         else:
             raise
+
+def try_gpu_safe(fn, *args, **kwargs):
+    all_inputs = all_tensors(args) + all_tensors(kwargs)
+    input_devices = {t.device.type for t in all_inputs if isinstance(t, torch.Tensor)}
+
+    # Nếu có tensor ở CPU hoặc mix device → thử chuyển sang GPU
+    if 'cpu' in input_devices or len(input_devices) > 1:
+        if has_enough_gpu_memory(all_inputs):
+            print("[Align] Moving all inputs to GPU.")
+            args = to_device(args, 'cuda')
+            kwargs = to_device(kwargs, 'cuda')
+        else:
+            print("[Fallback] Moving all inputs to CPU.")
+            args = to_device(args, 'cpu')
+            kwargs = to_device(kwargs, 'cpu')
+
+    try:
+        return fn(*args, **kwargs)
+
+    except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
+        if "CUDA out of memory" in str(e) or isinstance(e, torch.cuda.OutOfMemoryError):
+            print("[OOM] CUDA memory error. Retrying on CPU...")
+            torch.cuda.empty_cache()
+            gc.collect()
+            args_cpu = to_device(args, 'cpu')
+            kwargs_cpu = to_device(kwargs, 'cpu')
+            return fn(*args_cpu, **kwargs_cpu)
+        else:
+            raise
+
 
 def build_L_matrix(groupIdx, N, dtype=torch.float32, device='cuda'):
     if isinstance (groupIdx, np.ndarray):
@@ -536,7 +567,7 @@ def safe_eye(N, device='cuda', dtype=torch.float32):
         except Exception:
             print("[INFO] Using NumPy eye.")
             return np.eye(N, dtype=np.float32)
-    return try_gpu_then_numpy(eye_fn, N)
+    return try_gpu_safe(eye_fn, N)
 
 def safe_eigh(a):
     if isinstance(a, np.ndarray):
