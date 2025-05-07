@@ -241,31 +241,23 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
 
     Nt = Kt.shape[0] if Kt is not None else 0
 
-    # Centering matrix H
-    I = torch.eye(N, device=device)
-    H = I - torch.ones((N, N), device=device) / N
+    I = safe_eye(N)
+    ones = safe_ones((N, N)) / N
+    ones = ones.to(I.device)
+    H = I - ones
 
-    # Build L matrix
-    unique_groups = torch.unique(groupIdx)
-    G = len(unique_groups)
-    NG = torch.stack([(groupIdx == g).sum() for g in unique_groups])
-    group_counts = torch.stack([(groupIdx == g).sum() for g in unique_groups])
-
-    # Construct L matrix
-    L = try_gpu_safe (build_L_matrix, groupIdx, N, dtype=Kx.dtype, device=device)
-
-
-    del groupIdx, unique_groups, group_counts
+    del ones, I
     torch.cuda.empty_cache()
     gc.collect()
 
-    # Center Kx and Ky
+    # Build L matrix
+    # unique_groups = torch.unique(groupIdx)
+    unique_groups = safe_unique(groupIdx)
+    L = try_gpu_safe (build_L_matrix, groupIdx, N, dtype=Kx.dtype, device=device)
 
-    # Kx = try_gpu_then_cpu(lambda: center_kernel_blockwise( Kx, block_size=512, device=device))
-    # Ky = try_gpu_then_cpu(lambda: center_kernel_blockwise(Ky, block_size=512, device=device))
-
-    # Kx_L = try_gpu_then_cpu(lambda: blockwise_mm(Kx, L, block_size=512, device=device))
-    # Kx_L_Kx = try_gpu_then_cpu(lambda: blockwise_mm(Kx_L, Kx, block_size=512, device=device))
+    del groupIdx, unique_groups
+    torch.cuda.empty_cache()
+    gc.collect()
 
     Kx = try_gpu_safe(center_kernel_blockwise, Kx, block_size=512, device=device)
     Ky = try_gpu_safe(center_kernel_blockwise, Ky, block_size=512, device=device)
@@ -277,30 +269,8 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     torch.cuda.empty_cache()
     gc.collect()
 
-    # Kx_Kx = try_gpu_then_cpu( lambda: blockwise_mm( Kx, Kx, block_size=512))
-
-    # eye_N = try_gpu_then_cpu(lambda: torch.eye(N, dtype=Kx.dtype))
-    # A_left = try_gpu_then_cpu(lambda: Kx_L_Kx + Kx)
-    # A_left = try_gpu_then_cpu(lambda: A_left + lambd * eye_N)
-    
-    # # Ky_eps = Ky + N * epsilon * I
-    # Ky_eps = try_gpu_then_cpu(lambda: Ky + N * epsilon * eye_N)
-
-    # # Solve mid = Ky_eps⁻¹ @ Kx_Kx
-    # mid = try_gpu_then_cpu(lambda: torch.linalg.solve(Ky_eps, Kx_Kx))
-
-    # # A_right = Ky @ mid
-    # A_right = try_gpu_then_cpu(lambda: torch.matmul(Ky, mid))
-
-
-    # # Solve final system
-    # # A = torch.linalg.solve(A_left, A_right)
-    # # A = try_gpu_then_cpu(safe_solve, A_left, A_right, device=device)
-    # A = try_gpu_then_cpu(lambda: safe_solve(A_left, A_right, device=device))
-
     Kx_Kx = try_gpu_safe(blockwise_mm, Kx, Kx, block_size=512)
 
-    # eye_N = try_gpu_then_numpy(torch.eye, N, device=device, dtype=Kx.dtype)
     eye_N = safe_eye(N, dtype=Kx.dtype)
     eye_scaled = try_gpu_safe(scale_fn, eye_N, lambd)
 
@@ -327,44 +297,31 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
 
 
     if torch.allclose(A, A.T, atol=1e-6):
-        # eigvals, eigvecs = torch.linalg.eigh(A)
-        # eigvals, eigvecs = try_gpu_then_cpu(lambda: torch.linalg.eigh(A))
         eigvals, eigvecs = try_gpu_safe(safe_eigh, A)
         eigvals = eigvals[-M:]
         eigvecs = eigvecs[:, -M:]
     else:
-        # eigvals, eigvecs = torch.linalg.eig(A)
-        # eigvals, eigvecs = try_gpu_then_cpu(lambda: torch.linalg.eig(A))
         eigvals, eigvecs = try_gpu_safe(safe_eig, A)
         eigvals = eigvals.real
         eigvecs = eigvecs.real
-        # _, indices = torch.topk(eigvals, M)
-        # eigvals = eigvals[indices]
-        # eigvecs = eigvecs[:, indices]
+        
         topk_vals, indices = try_gpu_safe(safe_topk, eigvals, M)
         eigvals = topk_vals
-        indices = indices.to(eigvecs.device)  # đảm bảo cùng thiết bị
+        indices = indices.to(eigvecs.device)
         eigvecs = eigvecs[:, indices]
-        # eigvecs = eigvecs[:, indices]
 
-
-    # eigvecs = eigvecs / torch.sqrt(eigvals.unsqueeze(0))
     sqrt_vals = try_gpu_safe(safe_sqrt, eigvals)
     sqrt_vals = sqrt_vals.to(eigvecs.device)
     eigvecs = eigvecs / sqrt_vals.unsqueeze(0)
 
 
     V = eigvecs
-    # D = torch.diag(eigvals)
     D = try_gpu_safe(safe_diag, eigvals)
 
     del A, eigvecs, eigvals
     torch.cuda.empty_cache()
     gc.collect()
 
-    # X = V.T @ Kx
-
-    # X = try_gpu_then_cpu(lambda: torch.matmul( V.T, Kx))
     X = try_gpu_safe(matmul_fn, V.T, Kx)
     del Kx
     torch.cuda.empty_cache()
@@ -377,22 +334,17 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
         del ones_Nt
         Ht = try_gpu_safe(add_fn, eye_Nt, -scaled_ones)  # Ht = I - 1/N * 1_1^T
         del eye_Nt, scaled_ones
-        # Ht = torch.eye(Nt, device=device) - torch.ones((Nt, Nt), device=device) / Nt
-        # Kt_c = Ht @ Kt @ H
+       
         Ht_Kt = try_gpu_safe(matmul_fn, Ht, Kt)
         del Ht, Kt
         Kt_c = try_gpu_safe(matmul_fn, Ht_Kt, H)
         del Ht_Kt, H 
         # Xt = V.T @ Kt_c.T
         Xt = try_gpu_safe(matmul_fn, V.T, Kt_c.T)
-        # Xt = try_gpu_then_numpy(lambda: torch.matmul(V.T, Kt_c.T))
-
         del Kt_c
 
     else:
         Xt = None
-
-
     torch.cuda.empty_cache()
     gc.collect()
 
