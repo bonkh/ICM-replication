@@ -9,3 +9,4 @@ __pycache__/
 *.dat
 *.pkl
 *.pdf
+Experiment2/*.csv
