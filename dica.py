@@ -343,11 +343,14 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
         # eigvecs = eigvecs[:, indices]
         topk_vals, indices = try_gpu_safe(safe_topk, eigvals, M)
         eigvals = topk_vals
+        indices = indices.to(eigvecs.device)  # đảm bảo cùng thiết bị
         eigvecs = eigvecs[:, indices]
+        # eigvecs = eigvecs[:, indices]
 
 
     # eigvecs = eigvecs / torch.sqrt(eigvals.unsqueeze(0))
     sqrt_vals = try_gpu_safe(safe_sqrt, eigvals)
+    sqrt_vals = sqrt_vals.to(eigvecs.device)
     eigvecs = eigvecs / sqrt_vals.unsqueeze(0)
 
 
