@@ -318,8 +318,8 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     sqrt_vals = try_gpu_safe(safe_sqrt, eigvals)
     sqrt_vals = sqrt_vals.to(eigvecs.device)
     # eigvecs = eigvecs / sqrt_vals.unsqueeze(0)
-    eigvecs = safe_divide(eigvecs, sqrt_vals, unsqueeze_dim=0)
-
+    # eigvecs = safe_divide(eigvecs, sqrt_vals, unsqueeze_dim=0)
+    eigvecs = try_gpu_safe(divide_fn, eigvecs, sqrt_vals, unsqueeze_dim = 0)
 
     V = eigvecs
     D = try_gpu_safe(safe_diag, eigvals)
