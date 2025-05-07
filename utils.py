@@ -556,18 +556,14 @@ def matmul_fn(a, b):
         print("[INFO] Using Torch matmul.")
         return torch.matmul(a, b)
     
-def safe_eye(N, device='cuda', dtype=torch.float32):
-    def eye_fn(N):
-        try:
-            if use_gpu["enabled"] and torch.cuda.is_available():
-                print("[INFO] Using Torch eye.")
-                return torch.eye(N, dtype=dtype, device=device)
-            else:
-                raise RuntimeError("Force NumPy fallback")
-        except Exception:
-            print("[INFO] Using NumPy eye.")
-            return np.eye(N, dtype=np.float32)
-    return try_gpu_safe(eye_fn, N)
+def safe_eye(N, dtype=torch.float32):
+    try:
+        print("[INFO] Trying Torch eye on GPU.")
+        return torch.eye(N, dtype=dtype, device='cuda')
+    except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
+        print(f"[WARNING] Torch eye on GPU failed, switching to CPU: {e}")
+        return torch.eye(N, dtype=dtype, device='cpu')
+
 
 def safe_eigh(a):
     if isinstance(a, np.ndarray):
@@ -591,7 +587,7 @@ def safe_eig(a):
     try:
         print("[INFO] Using Torch eig on GPU.")
         return torch.linalg.eig(a)
-    except RuntimeError as e:
+    except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
         print("[WARNING] Torch eig on GPU failed, switching to CPU:", e)
         a_cpu = a.detach().cpu()
         return torch.linalg.eig(a_cpu)
@@ -631,14 +627,10 @@ def scale_fn(x, scalar):
         print("[INFO] Using Torch scale.")
         return x * scalar
     
-def safe_ones(shape, device=None, dtype=torch.float32):
-    if use_gpu.get("enabled", True) and torch.cuda.is_available():
-        try:
-            return torch.ones(shape, device=device, dtype=dtype)
-        except RuntimeError as e:
-            if "CUDA out of memory" in str(e):
-                print("[OOM] Falling back to NumPy for safe_ones.")
-                use_gpu["enabled"] = False
-            else:
-                raise
-    return np.ones(shape, dtype=np.float32)  # NumPy fallback
+def safe_ones(shape, dtype=torch.float32):
+    try:
+        print("[INFO] Trying Torch ones on GPU.")
+        return torch.ones(shape, device='cuda', dtype=dtype)
+    except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
+        print(f"[WARNING] Torch ones on GPU failed, switching to CPU: {e}")
+        return torch.ones(shape, device='cpu', dtype=dtype)
