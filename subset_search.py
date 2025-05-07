@@ -282,6 +282,7 @@ def subset(x, y, n_samples_per_task_list, delta, valid_split, use_hsic = False,
 
     return subset
 
+# TODO: Implement HSIC check function/Levene check function
 def greedy_search(train_x, train_y, valid_x, valid_y, n_samples_per_task, n_samples_per_task_valid, 
                   use_hsic, alpha):
     """
@@ -328,6 +329,7 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_samples_per_task, n_samp
 
     # Step 2: Loop over subsets of features
     while stay:
+        # p-values, statistics, and MSE for each predictor
         pvals_a = np.zeros(num_predictors)
         statistic_a = 1e10 * np.ones(num_predictors)
         mse_a = np.zeros(num_predictors)
@@ -336,8 +338,9 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_samples_per_task, n_samp
             current_subset = np.sort(np.where(selected == 1)[0])
             regr = linear_model.LinearRegression()
 
+            # If the predictor is not selected, add it to the current subset
             if selected[p] == 0:
-                subset_add = np.append(current_subset, p).astype(int)
+                subset_add = np.append(current_subset, p).astype(int) 
                 regr.fit(train_x[:, subset_add], train_y.flatten())
                 pred = regr.predict(valid_x[:, subset_add])[:, np.newaxis]
                 mse_current = np.mean((pred - valid_y) ** 2)
@@ -350,6 +353,7 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_samples_per_task, n_samp
                 statistic_a[p] = levene[0]
                 mse_a[p] = mse_current
 
+            # If the predictor is already selected, remove it from the current subset
             elif selected[p] == 1:
                 acc_rem = np.copy(selected)
                 acc_rem[p] = 0
@@ -372,6 +376,7 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_samples_per_task, n_samp
 
         accepted = np.where(pvals_a > alpha)
 
+        # If the p-values are all above alpha, we choose the best MSE subset
         if accepted[0].size > 0:
             best_mse = np.amin(mse_a[np.where(pvals_a > alpha)])
             selected[np.where(mse_a == best_mse)] = (selected[np.where(mse_a == best_mse)] + 1) % 2
@@ -382,7 +387,9 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_samples_per_task, n_samp
             if binary in bins:
                 stay = 0
             bins.append(binary)
-        else:
+
+        # Else we fall back on using test statistics to choose the best subset
+        else:   
             best_pval_arg = np.argmin(statistic_a)
             selected[best_pval_arg] = (selected[best_pval_arg] + 1) % 2
             binary = np.sum(pow_2 * selected)
