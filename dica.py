@@ -242,11 +242,14 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     Nt = Kt.shape[0] if Kt is not None else 0
 
     I = safe_eye(N)
-    ones = safe_ones((N, N)) / N
-    ones = ones.to(I.device)
-    H = I - ones
+    # ones = safe_ones((N, N)) / N
+    ones = safe_ones((N, N))
+    ones_divided = safe_divide(ones, N)
+    del ones
+    ones_divided = ones_divided.to(I.device)
+    H = I - ones_divided
 
-    del ones, I
+    del ones_divided, I
     torch.cuda.empty_cache()
     gc.collect()
 

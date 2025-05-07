@@ -643,3 +643,11 @@ def safe_unique(tensor):
         print(f"[WARNING] Torch unique failed, switching to CPU: {e}")
         tensor_cpu = tensor.detach().cpu()
         return torch.unique(tensor_cpu)
+def safe_divide(tensor, value):
+    try:
+        # Try dividing on GPU if possible
+        return tensor / value
+    except RuntimeError as e:
+        print("[INFO] GPU out of memory during division, switching to CPU:", e)
+        # Fallback to CPU if GPU allocation fails
+        return tensor.to('cpu') / value
