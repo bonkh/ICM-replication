@@ -301,7 +301,7 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     Kx_Kx = try_gpu_safe(blockwise_mm, Kx, Kx, block_size=512)
 
     # eye_N = try_gpu_then_numpy(torch.eye, N, device=device, dtype=Kx.dtype)
-    eye_N = safe_eye(N, device=device, dtype=Kx.dtype)
+    eye_N = safe_eye(N, dtype=Kx.dtype)
     eye_scaled = try_gpu_safe(scale_fn, eye_N, lambd)
 
     A_left = try_gpu_safe(add_fn, Kx_L_Kx, Kx)
@@ -371,7 +371,7 @@ def dica_torch(Kx_path, Ky_path, Kt_path, N, Nt, groupIdx_path, lambd, epsilon, 
     gc.collect()
 
     if Kt is not None and Nt > 0:
-        eye_Nt = safe_eye(Nt, device=device, dtype=Kt.dtype)
+        eye_Nt = safe_eye(Nt, dtype=Kt.dtype)
         ones_Nt = try_gpu_safe(safe_ones, (Nt, Nt), device=device, dtype=Kt.dtype)
         scaled_ones = try_gpu_safe(scale_fn, ones_Nt, 1.0 / Nt)
         del ones_Nt
