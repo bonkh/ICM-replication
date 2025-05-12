@@ -101,7 +101,7 @@ for rep in range(n_repeat):
         print(f'1. Pooling the data')
         lr_temp = linear_model.LinearRegression()
         lr_temp.fit(x_temp, y_temp)
-        results['pool'][rep, index] = utils.mse(lr_temp, x_test, y_test)
+        results['pool'][rep, index] = mse(lr_temp, x_test, y_test)
         del lr_temp
         gc.collect()
 
@@ -119,7 +119,7 @@ for rep in range(n_repeat):
                                             use_hsic=use_hsic)
         lr_sg_temp = linear_model.LinearRegression()
         lr_sg_temp.fit(x_temp[:,s_greedy], y_temp)
-        results['sgreed'][rep, index] = utils.mse(lr_sg_temp, x_test[:,s_greedy], y_test)
+        results['sgreed'][rep, index] = mse(lr_sg_temp, x_test[:,s_greedy], y_test)
 
         del lr_sg_temp
         gc.collect()
@@ -128,22 +128,22 @@ for rep in range(n_repeat):
         print(f'4. True causal predictor')
         lr_true_temp = linear_model.LinearRegression()
         lr_true_temp.fit(x_temp[:,true_s], y_temp)
-        results['strue'][rep, index] = utils.mse(lr_true_temp,x_test[:,true_s], y_test)
+        results['strue'][rep, index] = mse(lr_true_temp,x_test[:,true_s], y_test)
         del lr_true_temp
         gc.collect()
 
         # ************ 5. mSDA *************
         print(f'5. mSDA')
         p = np.linspace(0,1,10)
-        p_cv = mSDA.mSDA_cv(p, x_temp, y_temp, n_cv = t)
-        fit_sda = mSDA.mSDA(x_temp.T,p_cv,1)
+        p_cv = mSDA_cv(p, x_temp, y_temp, n_cv = t)
+        fit_sda = mSDA(x_temp.T,p_cv,1)
         x_sda = fit_sda[-1][-1].T
         w_sda = fit_sda[0]
-        x_test_sda = mSDA.mSDA_features(w_sda, x_test.T).T
+        x_test_sda = mSDA_features(w_sda, x_test.T).T
 
         lr_sda = linear_model.LinearRegression()
         lr_sda.fit(x_sda, y_temp)
-        results['msda'][rep, index] = utils.mse(lr_sda, x_test_sda, y_test)
+        results['msda'][rep, index] = mse(lr_sda, x_test_sda, y_test)
         del lr_sda
         del x_temp, y_temp
         gc.collect()
