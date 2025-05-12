@@ -664,3 +664,38 @@ def divide_fn(a, b, unsqueeze_dim=None):
         b = b.unsqueeze(unsqueeze_dim)
 
     return a / b
+
+#Select top 11 predictors from Lasso
+def lasso_alpha_search_synt(X,Y):
+
+    exit_loop = False
+    alpha_lasso = 0.2
+    step = 0.02
+    num_iters = 1000
+    count = 0
+    n = 11
+
+    while(not exit_loop and count < num_iters):
+            count = count + 1
+
+            regr = linear_model.Lasso(alpha = alpha_lasso)
+            regr.fit(X,Y.flatten())
+            zeros =  np.where(np.abs(regr.coef_) < 0.00000000001)
+
+            nonzeros = X.shape[1]-zeros[0].shape[0]
+
+            if(nonzeros >= n and nonzeros<n+1):
+                    exit_loop = True
+            if nonzeros<n:
+                    alpha_lasso -= step
+            else:
+                    step /= 2
+                    alpha_lasso += step
+
+
+    mask = np.ones(X.shape[1],dtype = bool)
+    mask[zeros] = False
+    genes = []
+    index_mask = np.where(mask == True)[0]
+
+    return mask

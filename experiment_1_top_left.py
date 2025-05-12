@@ -1,9 +1,6 @@
 
 import numpy as np
 from sklearn import linear_model
-
-from sklearn.metrics.pairwise import rbf_kernel
-import matplotlib.pyplot as plt
 import argparse
 import subset_search
 import  pickle
@@ -38,12 +35,7 @@ save_dir = args.save_dir
 
 if not os.path.exists(save_dir):
   os.makedirs(save_dir)
-
-# save_dir = os.path.join(save_dir, 'fig4_tleft')
-# if not os.path.exists(save_dir):
-#   os.makedirs(save_dir)
-
-
+  
 n_task = int(args.n_task)
 n = int(args.n)
 
