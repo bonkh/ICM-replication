@@ -83,8 +83,8 @@ methods = [
             'sgreed',
             'strue',
             'mean',
-            'msda',
-            'dica'
+            'msda'
+            # 'dica'
           ]
 
 n_train_tasks = np.arange(n_train_tasks[0], n_train_tasks[-1] + 1, 1)
@@ -201,91 +201,91 @@ for rep in range(n_repeat):
     gc.collect()
 
     # *********** 7. DICA ********
-    print (f'7. DICA')
+    # print (f'7. DICA')
     
-    # domain_idx = []
+    # # domain_idx = []
 
+    # # for domain, n in enumerate(n_ex):
+    # #     domain_idx.extend([domain] * n)
+    # # domain_idx = np.array(domain_idx)
+
+    # domain_idx_path = os.path.join(save_dir, 'domain_idx.dat')
+    
+    # domain_idx_memmap = np.memmap(domain_idx_path, dtype='int32', mode='w+', shape=(sum(n_ex)))
+    # offset = 0
     # for domain, n in enumerate(n_ex):
-    #     domain_idx.extend([domain] * n)
-    # domain_idx = np.array(domain_idx)
+    #     domain_idx_memmap[offset:offset+n] = domain
+    #     offset += n
+    # domain_idx_memmap.flush()  # ensure it's written
 
-    domain_idx_path = os.path.join(save_dir, 'domain_idx.dat')
-    
-    domain_idx_memmap = np.memmap(domain_idx_path, dtype='int32', mode='w+', shape=(sum(n_ex)))
-    offset = 0
-    for domain, n in enumerate(n_ex):
-        domain_idx_memmap[offset:offset+n] = domain
-        offset += n
-    domain_idx_memmap.flush()  # ensure it's written
+    # # domain_idx = np.memmap (domain_idx_path, dtype='int32', mode='r', shape=(sum(n_ex),))
 
-    # domain_idx = np.memmap (domain_idx_path, dtype='int32', mode='r', shape=(sum(n_ex),))
+    # # are_equal = np.allclose(domain_idx, domain_idx_2)
+    # # print(are_equal)
 
-    # are_equal = np.allclose(domain_idx, domain_idx_2)
-    # print(are_equal)
+    # # Use RBF kernel with chosen bandwidth
+    # gamma_x = 1.0 / x_temp.shape[1]
+    # gamma_y = 1.0
 
-    # Use RBF kernel with chosen bandwidth
-    gamma_x = 1.0 / x_temp.shape[1]
-    gamma_y = 1.0
+    # Kx_path = os.path.join(save_dir, 'Kx.dat')
+    # Ky_path = os.path.join(save_dir, 'Ky.dat')
+    # Kt_path = os.path.join(save_dir, 'Kt.dat')
 
-    Kx_path = os.path.join(save_dir, 'Kx.dat')
-    Ky_path = os.path.join(save_dir, 'Ky.dat')
-    Kt_path = os.path.join(save_dir, 'Kt.dat')
-
-    Kx = compute_rbf_kernel_blockwise_to_memmap(x_temp, x_temp, gamma=gamma_x, mmap_path=Kx_path)
-    Ky = compute_rbf_kernel_blockwise_to_memmap(y_temp, y_temp, gamma=gamma_y, mmap_path=Ky_path)
-    Kt = compute_rbf_kernel_blockwise_to_memmap(x_test, x_temp, gamma=gamma_x, mmap_path=Kt_path)
-    N = x_temp.shape[0]
-    # Kx = np.memmap(Kx_path, dtype='float32', mode='r', shape=(N, N))
-    # Ky = np.memmap(Ky_path, dtype='float32', mode='r', shape=(N, N))
-    # Kt = np.memmap(Kt_path, dtype='float32', mode='r', shape=(x_test.shape[0], N))
+    # Kx = compute_rbf_kernel_blockwise_to_memmap(x_temp, x_temp, gamma=gamma_x, mmap_path=Kx_path)
+    # Ky = compute_rbf_kernel_blockwise_to_memmap(y_temp, y_temp, gamma=gamma_y, mmap_path=Ky_path)
+    # Kt = compute_rbf_kernel_blockwise_to_memmap(x_test, x_temp, gamma=gamma_x, mmap_path=Kt_path)
+    # N = x_temp.shape[0]
+    # # Kx = np.memmap(Kx_path, dtype='float32', mode='r', shape=(N, N))
+    # # Ky = np.memmap(Ky_path, dtype='float32', mode='r', shape=(N, N))
+    # # Kt = np.memmap(Kt_path, dtype='float32', mode='r', shape=(x_test.shape[0], N))
 
   
-    # unique_domains = np.unique(domain_idx)
-    lambda_ = 1e-3
-    epsilon = 1e-3
-    m = 2
+    # # unique_domains = np.unique(domain_idx)
+    # lambda_ = 1e-3
+    # epsilon = 1e-3
+    # m = 2
 
-    V, D, Z_train, Z_test = dica_torch(
-    Kx_path = Kx_path, 
-    Ky_path = Ky_path, 
-    Kt_path = Kt_path, 
-    N = N,
-    Nt = x_test.shape[0],
-    groupIdx_path = domain_idx_path, 
-    lambd=lambda_, 
-    epsilon=epsilon, 
-    M=m
-    )
+    # V, D, Z_train, Z_test = dica_torch(
+    # Kx_path = Kx_path, 
+    # Ky_path = Ky_path, 
+    # Kt_path = Kt_path, 
+    # N = N,
+    # Nt = x_test.shape[0],
+    # groupIdx_path = domain_idx_path, 
+    # lambd=lambda_, 
+    # epsilon=epsilon, 
+    # M=m
+    # )
 
-    Z_train = Z_train.T.cpu().numpy()
-    Z_test = Z_test.T.cpu().numpy()
-
-
-    # V, D, Z_train, Z_test = dica(
-    #   Kx_path = Kx_path, 
-    #   Ky_path = Ky_path, 
-    #   Kt_path = Kt_path,
-    #   N = N,
-    #   Nt = x_test.shape[0],
-    #   groupIdx_path = domain_idx_path,
-    #   lambd = lambda_, 
-    #   epsilon = epsilon, 
-    #   M = m
-    #   )
-
-    # Z_train = Z_train.T
-    # Z_test = Z_test.T
+    # Z_train = Z_train.T.cpu().numpy()
+    # Z_test = Z_test.T.cpu().numpy()
 
 
-    reg_dica = linear_model.LinearRegression()
-    reg_dica.fit(Z_train, y_temp)
-    results['dica'][rep, index] = utils.mse(reg_dica, Z_test, y_test) 
+    # # V, D, Z_train, Z_test = dica(
+    # #   Kx_path = Kx_path, 
+    # #   Ky_path = Ky_path, 
+    # #   Kt_path = Kt_path,
+    # #   N = N,
+    # #   Nt = x_test.shape[0],
+    # #   groupIdx_path = domain_idx_path,
+    # #   lambd = lambda_, 
+    # #   epsilon = epsilon, 
+    # #   M = m
+    # #   )
 
-    del reg_dica
-    del x_temp, y_temp, Kx, Ky, Kt, V, D, Z_train, Z_test
-    gc.collect()
-    end = get_memory_usage_gb()
-    print(f"RAM Used: {end - start:.2f} GB")  
+    # # Z_train = Z_train.T
+    # # Z_test = Z_test.T
+
+
+    # reg_dica = linear_model.LinearRegression()
+    # reg_dica.fit(Z_train, y_temp)
+    # results['dica'][rep, index] = utils.mse(reg_dica, Z_test, y_test) 
+
+    # del reg_dica
+    # del x_temp, y_temp, Kx, Ky, Kt, V, D, Z_train, Z_test
+    # gc.collect()
+    # end = get_memory_usage_gb()
+    # print(f"RAM Used: {end - start:.2f} GB")  
 
   del x_train, y_train, x_test, y_test
   gc.collect()
