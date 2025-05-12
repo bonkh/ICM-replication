@@ -151,11 +151,13 @@ for rep in range(n_repeat):
         lr_s_temp.fit(x_temp[:,s_hat], y_temp)
         results['shat'][rep, index] = mse(lr_s_temp, x_test[:,s_hat], 
                                                 y_test)
+        
+        del lr_s_temp
+        gc.collect()
       else:
         results['shat'][rep,index] = error_mean
 
-      del lr_s_temp
-      gc.collect()
+      
 
     # ************** 4. Estimated greedy S ******************
     print(f'4. Greedy subset search')
