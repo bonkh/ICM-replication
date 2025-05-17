@@ -10,3 +10,6 @@ __pycache__/
 *.pkl
 *.pdf
 Experiment2/*.csv
+Experiment2/*.json
+Experiment2/*.zip
+Experiment2/*.txt
