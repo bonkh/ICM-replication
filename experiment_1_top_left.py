@@ -91,23 +91,10 @@ for rep in range(n_repeat):
     
  
   x_train, y_train = dataset.resample(n_task, n)
-  # print(x_train.shape)
-  # x_train_path = os.path.join(save_dir, 'x_train.dat')
-  # y_train_path = os.path.join(save_dir, 'y_train.dat')
-  # np.memmap(x_train_path, dtype='float32', mode='w+', shape=x_train.shape)[:] = x_train.astype('float32')
-  # np.memmap(y_train_path, dtype='float32', mode='w+', shape=y_train.shape)[:] = y_train.astype('float32')
-
-
 
 
   x_test = dataset.test['x_test']
   y_test = dataset.test['y_test']
-
-  # Load from disk without reading everything into memory
-  # x_train = np.memmap(x_train_path, dtype='float32', mode='r', shape=(n_task * n, p))
-  # y_train = np.memmap(y_train_path, dtype='float32', mode='r', shape=(n_task * n, 1))
-  # end = get_memory_usage_gb()
-  # print(f"RAM Used: {end - start:.2f} MB")  
 
 
   for index, t in np.ndenumerate(n_train_tasks):
