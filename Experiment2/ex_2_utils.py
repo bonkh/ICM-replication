@@ -6,6 +6,8 @@ from collections import defaultdict
 import gc
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+import json
+
 
 # Add the parent directory (where subset_search.py is located) to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -50,20 +52,17 @@ def split_by_causes(filtered_data, gene_causes):
 
     return causal_dict, non_causal_dict
 alpha_test = 0.05
-use_hsic = 0
+use_hsic = 1
 
 result = defaultdict(list)
 
 
 
-def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, int_data, int_pos_data, algorithm1_fn=None):
+def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, int_data, int_pos_data, gene_causes):
     """
     gene_dict: {target_gene: [top10_predictors]}
     algorithm1_fn: function like def algorithm1_fn(X, y, predictors): return list of invariant predictors
     """
-
-    results = []
-
     for target_gene, intervented_gene_list in intervened_gene_dict.items():
 
         print(f'Target_gene: {target_gene}')
@@ -72,9 +71,9 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
 
         for intervened_gene in intervented_gene_list:
             print(f'Inter gene: {intervened_gene}')
-            # Get rows where this predictor was intervened on
+
             int_rows = int_pos_data[int_pos_data['Mutant'] == intervened_gene].index
-            print(int_rows)
+    
             if len(int_rows) == 0:
                 continue
 
@@ -94,44 +93,82 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
 
             # Combine data
             X = pd.concat([X_obs, X_int], axis=0)
-            y = pd.concat([y_obs, y_int], axis=0)
+            y = pd.concat([y_obs, y_int], axis=0).to_frame()
             
             y_test = int_data.loc[held_out_idx, target_gene]
 
-            error_mean = np.mean((y_test - np.mean(y)) ** 2)
+            # ******** Pool the data ********
+            lr_pool = linear_model.LinearRegression()
+            lr_pool.fit(X, y)
+            X_test = int_data[top10_predictors].loc[[held_out_idx],:]
+            result['pool'].append (mse(lr_pool, X_test, y_test))
 
-            print(X.shape)
+            #  ******* Mean ********
+            error_mean = np.mean((y_test - np.mean(y)) ** 2)
+            result['mean'].append (error_mean)
+
+            # ****** Subset search ******
             n_obs = len(X_obs)
             n_int = len(X_int)
 
             n_ex = [n_obs, n_int]
-
+            
             s_hat = subset(X, y, n_ex, delta=alpha_test, valid_split=0.6, use_hsic=use_hsic)
+
             if s_hat.size> 0:
                 lr_s_hat = linear_model.LinearRegression()
-                lr_s_hat.fit(X[:,s_hat], y)
-                results['shat'].append(mse(lr_s_hat, int_data.loc[[held_out_idx], s_hat], 
-                                                        y_test))
+                lr_s_hat.fit(X.iloc[:,s_hat], y)
+
+                selected_features = X.columns[s_hat]
+                X_test = int_data[top10_predictors].loc[[held_out_idx], selected_features]
+                result['shat'].append(mse(lr_s_hat, X_test, y_test))
                 
                 del lr_s_hat
                 gc.collect()
             else:
-                results['shat'].append (error_mean)
+                result['shat'].append (error_mean)
 
-    return results
+            # ***** Causal ******
+            if target_gene in gene_causes:
+                causal_cause = gene_causes[target_gene]
+      
+                lr_true_causal = linear_model.LinearRegression()
+                lr_true_causal.fit(X.loc[:,causal_cause], y)
+                X_test = int_data.loc[[held_out_idx], causal_cause]
+                result['strue'].append(mse(lr_true_causal,X_test, y_test))
+            else:
+                result['shat'].append (error_mean)
 
-def plot_shat_errors(results, output_pdf='shat_error_boxplot.pdf'):
-    if 'shat' not in results or len(results['shat']) == 0:
-        print("No 'shat' errors to plot.")
+    return result
+
+def plot_all_errors(results, output_pdf='all_error_boxplots.pdf'):
+    if not results:
+        print("No results to plot.")
         return
 
-    plt.figure(figsize=(8, 6))
-    plt.boxplot(results['shat'], patch_artist=True, boxprops=dict(facecolor='lightblue'))
+    # Filter out keys with empty lists
+    filtered_results = {k: v for k, v in results.items() if len(v) > 0}
+    if not filtered_results:
+        print("No non-empty error lists to plot.")
+        return
 
-    plt.title('Boxplot of prediction errors for $\hat{S}$')
+    plt.figure(figsize=(10, 6))
+
+    # Create the boxplot
+    plt.boxplot(
+        filtered_results.values(),
+        patch_artist=True,
+        boxprops=dict(facecolor='lightblue'),
+        medianprops=dict(color='red'),
+    )
+
+    # Set labels and title
+    plt.xticks(ticks=range(1, len(filtered_results) + 1), labels=filtered_results.keys())
+    plt.title('Boxplot of prediction errors by method')
     plt.ylabel('Mean Squared Error')
-    plt.grid(True)
+    plt.grid(True, linestyle='--', alpha=0.5)
 
+    # Save to PDF
     with PdfPages(output_pdf) as pdf:
         pdf.savefig()
         plt.close()

@@ -42,6 +42,6 @@ causal_dict, non_causal_dict = split_by_causes(filtered_data, gene_causes)
 print("Causal targets:", len(causal_dict))
 print("Non-causal targets:", len(non_causal_dict))
 
-result = evaluate_gene_invariance(non_causal_dict, data, obs_data, int_data, int_pos_data)
+result = evaluate_gene_invariance(non_causal_dict, data, obs_data, int_data, int_pos_data, gene_causes)
 
-plot_shat_errors(result)
+plot_all_errors(result)
