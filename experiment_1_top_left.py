@@ -103,9 +103,6 @@ for rep in range(n_repeat):
     x_temp = x_train[0:np.cumsum(n_ex)[t], :]
     y_temp = y_train[0:np.cumsum(n_ex)[t], :]
 
-    
-
-
     # ************** 1. Pooled *********************
     lr_temp = linear_model.LinearRegression()
     lr_temp.fit(x_temp, y_temp)
