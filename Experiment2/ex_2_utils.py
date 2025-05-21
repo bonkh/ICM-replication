@@ -135,8 +135,8 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
                 X_obs_causal = obs_data[causal_cause]
                 X_int_causal = int_data_subset[causal_cause]
 
-                X_causal = pd.concat([X_obs_causal, X_int_causal], axis=0)
-                X_test = int_data.loc[[held_out_idx], causal_cause]
+                X_causal = pd.concat([X_obs_causal, X_int_causal], axis=0).to_frame()
+                X_test = int_data.loc[[held_out_idx], causal_cause].to_frame()
 
 
       

@@ -45,3 +45,32 @@ print("Non-causal targets:", len(non_causal_dict))
 result = evaluate_gene_invariance(non_causal_dict, data, obs_data, int_data, int_pos_data, gene_causes)
 
 plot_all_errors(result)
+# target_gene = 'YAL061W'
+# intervened_gene = 'YOR173W'
+# int_rows = int_pos_data[int_pos_data['Mutant'] == intervened_gene].index
+# held_out_idx = int_rows[0]
+# top10_predictors = data[target_gene]
+
+# X_obs = obs_data[top10_predictors]
+# y_obs = obs_data[target_gene]
+
+# int_data_subset = int_data.drop(index=held_out_idx)
+# causal_cause = gene_causes[target_gene]
+# y_int = int_data_subset[target_gene]
+
+
+# X_obs_causal = obs_data[causal_cause]
+# X_int_causal = int_data_subset[causal_cause]
+
+# X_causal = pd.concat([X_obs_causal, X_int_causal], axis=0).to_frame()
+# X_test = int_data.loc[[held_out_idx], causal_cause].to_frame()
+# y = pd.concat([y_obs, y_int], axis=0).to_frame()
+
+# y_test = int_data.loc[held_out_idx, target_gene]
+
+# print(X_causal.shape)
+
+# lr_true_causal = linear_model.LinearRegression()
+# lr_true_causal.fit(X_causal, y)
+# print(lr_true_causal)
+# print(mse(lr_true_causal,X_test, y_test))
