@@ -100,6 +100,7 @@ for rep in range(n_repeat):
   y_test = dataset.test['y_test']
 
   for index, t in np.ndenumerate(n_train_tasks):
+    print("Task", t)
     x_temp = x_train[0:np.cumsum(n_ex)[t], :]
     y_temp = y_train[0:np.cumsum(n_ex)[t], :]
 
@@ -107,11 +108,12 @@ for rep in range(n_repeat):
     lr_temp = linear_model.LinearRegression()
     lr_temp.fit(x_temp, y_temp)
     results['pool'][rep, index] = mse(lr_temp, x_test, y_test)
+    print('1. Pooling', results['pool'][rep, index])
 
     # *************** 2. Mean ************
     error_mean = np.mean((y_test - np.mean(y_temp)) ** 2)
     results['mean'][rep, index] = error_mean
-
+    print('2. Mean', results['mean'][rep, index])
     # ************* 3. Estimated S_hat ***********
 
     if p<10:
@@ -127,7 +129,7 @@ for rep in range(n_repeat):
                                                 y_test)
       else:
         results['shat'][rep,index] = error_mean
-
+    print('3. Subset search', results['shat'][rep,index] )
     # ************** 4. Estimated greedy S ******************
     s_greedy = subset_search.greedy_subset(x_temp, y_temp, n_ex[0:t], 
                                            delta=alpha_test, 
@@ -141,34 +143,28 @@ for rep in range(n_repeat):
     else:
       results['sgreed'][rep, index] = error_mean
 
+    print('4.Greedy search', results['sgreed'][rep,index] )
     # ************ 5. True S **************
     lr_true_temp = linear_model.LinearRegression()
     lr_true_temp.fit(x_temp[:,true_s], y_temp)
     results['strue'][rep, index] = mse(lr_true_temp,x_test[:,true_s], y_test)
+    print('5. True S', results['strue'][rep,index] )
 
     # ************ 6. mSDA ************* 
-    p_linsp = np.linspace(0, 1, 10)
-    print(f"Type of p_linsp: {type(p_linsp)}, dtype: {p_linsp.dtype}")  # Print type and dtype of p_linsp
-
-    p_cv = mSDA_cv(p_linsp, x_temp, y_temp, n_cv=t)
-    print(f"Type of p_cv: {type(p_cv)}, dtype: {np.array(p_cv).dtype}")  # Print type and dtype of p_cv
-
-    fit_sda = mSDA(x_temp.T, p_cv, 1)
+    p_linsp = np.linspace(0,1,10)
+    p_cv = mSDA_cv(p_linsp, x_temp, y_temp, n_cv = t)
+    fit_sda = mSDA(x_temp.T,p_cv,1)
     x_sda = fit_sda[-1][-1].T
     w_sda = fit_sda[0]
     x_test_sda = mSDA_features(w_sda, x_test.T).T
 
-    print(f"Type of x_sda: {type(x_sda)}, dtype: {x_sda.dtype}, shape: {x_sda.shape}")  # Print type, dtype, and shape of x_sda
-    print(f"Type of w_sda: {type(w_sda)}, dtype: {w_sda.dtype}, shape: {w_sda.shape}")  # Print type, dtype, and shape of w_sda
-    print(f"Type of x_test_sda: {type(x_test_sda)}, dtype: {x_test_sda.dtype}, shape: {x_test_sda.shape}")  # Print type, dtype, and shape of x_test_sda
-
     lr_sda = linear_model.LinearRegression()
     lr_sda.fit(x_sda, y_temp)
     results['msda'][rep, index] = utils.mse(lr_sda, x_test_sda, y_test)
+    print(f'6. MSDA', results['msda'][rep, index])
+    print(f"x_test_sda - dtype: {x_test_sda.dtype}, y_test - dtype: {y_test.dtype}")
+    print(f"MSE - dtype: {results['msda'][rep, index].dtype}")
 
-    print(f"Type of results['msda'][rep, index]: {type(results['msda'][rep, index])}, dtype: {np.array(results['msda'][rep, index]).dtype}")  # Print type and dtype of results['msda'][rep, index]
-
-    print(f'6. MSDA')
 
     # # *********** 7. DICA ********
     # print (f'7. DICA')
