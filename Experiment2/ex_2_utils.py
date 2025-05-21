@@ -131,10 +131,18 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
             # ***** Causal ******
             if target_gene in gene_causes:
                 causal_cause = gene_causes[target_gene]
+
+                X_obs_causal = obs_data[causal_cause]
+                X_int_causal = int_data_subset[causal_cause]
+
+                X_causal = pd.concat([X_obs_causal, X_int_causal], axis=0)
+                X_test = int_data.loc[[held_out_idx], causal_cause]
+
+
       
                 lr_true_causal = linear_model.LinearRegression()
-                lr_true_causal.fit(X.loc[:,causal_cause], y)
-                X_test = int_data.loc[[held_out_idx], causal_cause]
+                lr_true_causal.fit(X_causal, y)
+                
                 result['strue'].append(mse(lr_true_causal,X_test, y_test))
             else:
                 result['shat'].append (error_mean)
