@@ -147,61 +147,71 @@ for rep in range(n_repeat):
     results['strue'][rep, index] = mse(lr_true_temp,x_test[:,true_s], y_test)
 
     # ************ 6. mSDA ************* 
-    p_linsp = np.linspace(0,1,10)
-    p_cv = mSDA_cv(p_linsp, x_temp, y_temp, n_cv = t)
-    fit_sda = mSDA(x_temp.T,p_cv,1)
+    p_linsp = np.linspace(0, 1, 10)
+    print(f"Type of p_linsp: {type(p_linsp)}, dtype: {p_linsp.dtype}")  # Print type and dtype of p_linsp
+
+    p_cv = mSDA_cv(p_linsp, x_temp, y_temp, n_cv=t)
+    print(f"Type of p_cv: {type(p_cv)}, dtype: {np.array(p_cv).dtype}")  # Print type and dtype of p_cv
+
+    fit_sda = mSDA(x_temp.T, p_cv, 1)
     x_sda = fit_sda[-1][-1].T
     w_sda = fit_sda[0]
     x_test_sda = mSDA_features(w_sda, x_test.T).T
+
+    print(f"Type of x_sda: {type(x_sda)}, dtype: {x_sda.dtype}, shape: {x_sda.shape}")  # Print type, dtype, and shape of x_sda
+    print(f"Type of w_sda: {type(w_sda)}, dtype: {w_sda.dtype}, shape: {w_sda.shape}")  # Print type, dtype, and shape of w_sda
+    print(f"Type of x_test_sda: {type(x_test_sda)}, dtype: {x_test_sda.dtype}, shape: {x_test_sda.shape}")  # Print type, dtype, and shape of x_test_sda
 
     lr_sda = linear_model.LinearRegression()
     lr_sda.fit(x_sda, y_temp)
     results['msda'][rep, index] = utils.mse(lr_sda, x_test_sda, y_test)
 
+    print(f"Type of results['msda'][rep, index]: {type(results['msda'][rep, index])}, dtype: {np.array(results['msda'][rep, index]).dtype}")  # Print type and dtype of results['msda'][rep, index]
+
     print(f'6. MSDA')
 
-    # *********** 7. DICA ********
-    print (f'7. DICA')
-    domain_idx = []
+    # # *********** 7. DICA ********
+    # print (f'7. DICA')
+    # domain_idx = []
 
-    for domain, n in enumerate(n_ex):
-        domain_idx.extend([domain] * n)
-    domain_idx = np.array(domain_idx)
+    # for domain, n in enumerate(n_ex):
+    #     domain_idx.extend([domain] * n)
+    # domain_idx = np.array(domain_idx)
 
-    # Use RBF kernel with chosen bandwidth
-    gamma_x = 1.0 / x_temp.shape[1]
-    gamma_y = 1.0
+    # # Use RBF kernel with chosen bandwidth
+    # gamma_x = 1.0 / x_temp.shape[1]
+    # gamma_y = 1.0
 
-    print(x_temp.shape )
+    # print(x_temp.shape )
 
-    Kx = rbf_kernel(x_temp, x_temp, gamma=gamma_x)
-    Ky = rbf_kernel(y_temp, y_temp, gamma=gamma_y)
-    Kt = rbf_kernel(x_test, x_temp, gamma=gamma_x)
-    print(f'KT shape:   {Kt.shape}')
+    # Kx = rbf_kernel(x_temp, x_temp, gamma=gamma_x)
+    # Ky = rbf_kernel(y_temp, y_temp, gamma=gamma_y)
+    # Kt = rbf_kernel(x_test, x_temp, gamma=gamma_x)
+    # print(f'KT shape:   {Kt.shape}')
    
-    N = x_temp.shape[0]
-    unique_domains = np.unique(domain_idx)
-    # print(n_ex)
+    # N = x_temp.shape[0]
+    # unique_domains = np.unique(domain_idx)
+    # # print(n_ex)
 
-    # Q = np.zeros((N, N))
+    # # Q = np.zeros((N, N))
 
-    # for d in unique_domains:
-    #     idx = np.where(domain_idx == d)[0]
-    #     nd = len(idx)
-    #     Q[np.ix_(idx, idx)] += 1.0 / nd
-    # Q /= len(unique_domains)
-    lambda_ = 1e-3
-    epsilon = 1e-3
-    m = 2
+    # # for d in unique_domains:
+    # #     idx = np.where(domain_idx == d)[0]
+    # #     nd = len(idx)
+    # #     Q[np.ix_(idx, idx)] += 1.0 / nd
+    # # Q /= len(unique_domains)
+    # lambda_ = 1e-3
+    # epsilon = 1e-3
+    # m = 2
 
-    V, D, Z_train, Z_test = dica(Kx=Kx, Ky=Ky, Kt=Kt , groupIdx=domain_idx, lambd=lambda_, epsilon=epsilon, M=m)
+    # V, D, Z_train, Z_test = dica(Kx=Kx, Ky=Ky, Kt=Kt , groupIdx=domain_idx, lambd=lambda_, epsilon=epsilon, M=m)
 
-    Z_train = Z_train.T
-    Z_test = Z_test.T
+    # Z_train = Z_train.T
+    # Z_test = Z_test.T
 
-    reg_dica = linear_model.LinearRegression()
-    reg_dica.fit(Z_train, y_temp)
-    results['dica'][rep, index] = utils.mse(reg_dica, Z_test, y_test)                
+    # reg_dica = linear_model.LinearRegression()
+    # reg_dica.fit(Z_train, y_temp)
+    # results['dica'][rep, index] = utils.mse(reg_dica, Z_test, y_test)                
 
 save_all = {}
 save_all['results'] = results
