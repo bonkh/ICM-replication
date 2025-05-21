@@ -160,6 +160,11 @@ for rep in range(n_repeat):
 
     lr_sda = linear_model.LinearRegression()
     lr_sda.fit(x_sda, y_temp)
+    print('x_sda', x_sda, x_sda.mean())
+    print('x_test_sda', x_test_sda, x_test_sda.mean())
+    print('y_temp', y_temp, y_temp.mean())
+    print('lr_sda.predict', lr_sda.predict(x_sda), lr_sda.predict(x_sda).mean())
+
     results['msda'][rep, index] = utils.mse(lr_sda, x_test_sda, y_test)
     print(f'6. MSDA', results['msda'][rep, index])
     print(f"x_test_sda - dtype: {x_test_sda.dtype}, y_test - dtype: {y_test.dtype}")
