@@ -8,61 +8,72 @@ from sklearn import linear_model
 import utils
 
 def mDA(X, p):
-    X = vstack((X,ones((1,shape(X)[1]))))
-    d = shape(X)[0]
-    q = vstack((ones((d-1,1))*(1-p),1))
-    S = dot(X,X.transpose())
-    Q = S * dot(q,q.transpose())
-    for i in range(d):
-        Q[i,i] = q[i,0]*S[i,i]
-    qrep = q.transpose()
-    for j in range(d-1):
-        qrep = vstack((qrep,q.transpose()))
-    P = S * qrep
-    W = linalg.solve((Q + 10**(-5)*eye(d)).transpose(), P[:d-1].transpose()).transpose()
+  X = vstack((X,ones((1,shape(X)[1]))))
+  print("X dtype:", X.dtype)
+  d = shape(X)[0]
+  q = vstack((ones((d-1,1))*(1-p),1))
+  print("q dtype:", q.dtype)
+  S = dot(X,X.transpose())
+  print("S dtype:", S.dtype)
+  Q = S * dot(q,q.transpose())
+  print("Q dtype:", Q.dtype)
+  for i in range(d):
+    Q[i,i] = q[i,0]*S[i,i]
+  qrep = q.transpose()
+  for j in range(d-1):
+    qrep = vstack((qrep,q.transpose()))
+  P = S * qrep
+  print("P dtype:", P.dtype)
+  W = linalg.solve((Q + 10**(-5)*eye(d)).transpose(), P[:d-1].transpose()).transpose()
+  print("W dtype:", W.dtype)
 
-    h = (dot(W,X))
-    return (W,h)
+  h = (dot(W,X))
+  print("h dtype:", h.dtype)
+  return (W,h)
 
 def mSDA(X, p, l):
-    d,n = shape(X)
-    Ws = zeros((l,d,d+1))
-    hs = zeros((l+1,d,n))
-    hs[0] = X 
-    for t in range(l):
-        Ws[t], hs[t+1] = mDA(hs[t], p)
-    return (Ws, hs)
+  d,n = shape(X)
+  Ws = zeros((l,d,d+1))
+  print("Ws dtype:", Ws.dtype)
+  hs = zeros((l+1,d,n))
+  print("hs dtype:", hs.dtype)
+  hs[0] = X 
+  for t in range(l):
+    Ws[t], hs[t+1] = mDA(hs[t], p)
+  return (Ws, hs)
 
 def mSDA_features(w, x):
-
   for i in range(w.shape[0]):
-    x = append(ones((1,x.shape[1])), x,0)
-    x = dot(w[i], x)
-
+  x = append(ones((1,x.shape[1])), x,0)
+  print("x dtype after append:", x.dtype)
+  x = dot(w[i], x)
+  print("x dtype after dot:", x.dtype)
   return x
 
 def mSDA_cv(p, x, y, n_cv=5):
-
   kf = KFold(n_splits = n_cv)
   res = np.zeros((p.size, n_cv))
+  print("res dtype:", res.dtype)
 
   for j, pj in enumerate(p):
-    i = 0
-    for train, test in kf.split(x):
-      x_temp, y_temp = x[train], y[train]
-      x_test, y_test = x[test], y[test]
+  i = 0
+  for train, test in kf.split(x):
+    x_temp, y_temp = x[train], y[train]
+    x_test, y_test = x[test], y[test]
 
-      fit_sda = mSDA(x_temp.T,pj,1)
-      x_sda = fit_sda[-1][-1].T
-      w_sda = fit_sda[0]
-      x_test_sda = mSDA_features(w_sda, x_test.T).T
+    fit_sda = mSDA(x_temp.T,pj,1)
+    x_sda = fit_sda[-1][-1].T
+    print("x_sda dtype:", x_sda.dtype)
+    w_sda = fit_sda[0]
+    x_test_sda = mSDA_features(w_sda, x_test.T).T
+    print("x_test_sda dtype:", x_test_sda.dtype)
 
-      lr_sda = linear_model.LinearRegression()
-      lr_sda.fit(x_sda, y_temp)
-      res[j,i] = utils.mse(lr_sda, x_test_sda, y_test)
-
-      i += 1
+    lr_sda = linear_model.LinearRegression()
+    lr_sda.fit(x_sda, y_temp)
+    res[j,i] = utils.mse(lr_sda, x_test_sda, y_test)
+    i += 1
   res = np.mean(res,1)
+  print("res dtype after mean:", res.dtype)
   return  p[np.argmin(res)]
 
 """
