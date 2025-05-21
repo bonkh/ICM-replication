@@ -43,31 +43,24 @@ def mSDA_features(w, x):
 
 def mSDA_cv(p, x, y, n_cv=5):
 
-    kf = KFold(n_splits=n_cv)
-    res = np.zeros((p.size, n_cv))
+  kf = KFold(n_splits = n_cv)
+  res = np.zeros((p.size, n_cv))
 
-    for j, pj in enumerate(p):
-        print(f"Type of pj: {type(pj)}, dtype: {np.array(pj).dtype}")  # Check type and dtype of pj
-        i = 0
-        for train, test in kf.split(x):
-            x_temp, y_temp = x[train], y[train]
-            x_test, y_test = x[test], y[test]
+  for j, pj in enumerate(p):
+    i = 0
+    for train, test in kf.split(x):
+      x_temp, y_temp = x[train], y[train]
+      x_test, y_test = x[test], y[test]
 
-            fit_sda = mSDA(x_temp.T, pj, 1)
-            x_sda = fit_sda[-1][-1].T
-            w_sda = fit_sda[0]
-            x_test_sda = mSDA_features(w_sda, x_test.T).T
+      fit_sda = mSDA(x_temp.T,pj,1)
+      x_sda = fit_sda[-1][-1].T
+      w_sda = fit_sda[0]
+      x_test_sda = mSDA_features(w_sda, x_test.T).T
 
-            lr_sda = linear_model.LinearRegression()
-            lr_sda.fit(x_sda, y_temp)
-            mse_value = utils.mse(lr_sda, x_test_sda, y_test)
-            print(f"Type of mse_value: {type(mse_value)}, dtype: {np.array(mse_value).dtype}")  # Check type and dtype of mse_value
-            res[j, i] = mse_value
+      lr_sda = linear_model.LinearRegression()
+      lr_sda.fit(x_sda, y_temp)
+      res[j,i] = utils.mse(lr_sda, x_test_sda, y_test)
 
-            i += 1
-    res = np.mean(res, 1)
-    print(f"Type of res: {type(res)}, dtype: {res.dtype}")  # Check type and dtype of res
-    print(f"Type of res[0]: {type(res[0])}, dtype: {np.array(res[0]).dtype}")  # Check type and dtype of an element in res
-    best_p = p[np.argmin(res)]
-    print(f"Type of best_p: {type(best_p)}, dtype: {np.array(best_p).dtype}")  # Check type and dtype of best_p
-    return best_p
+      i += 1
+  res = np.mean(res,1)
+  return  p[np.argmin(res)]
