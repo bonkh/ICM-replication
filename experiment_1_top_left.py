@@ -151,12 +151,16 @@ for rep in range(n_repeat):
     print('5. True S', results['strue'][rep,index] )
 
     # ************ 6. mSDA ************* 
-    p_linsp = np.linspace(0,1,10)
+    p_linsp = np.linspace(0.001,0.999,10)
     p_cv = mSDA_cv(p_linsp, x_temp, y_temp, n_cv = t)
     fit_sda = mSDA(x_temp.T,p_cv,1)
     x_sda = fit_sda[-1][-1].T
     w_sda = fit_sda[0]
     x_test_sda = mSDA_features(w_sda, x_test.T).T
+
+    # print(x_sda.shape, y_temp.shape)
+    # plt.scatter(x_sda.mean(axis=1), y_temp)
+    # plt.show()
 
     lr_sda = linear_model.LinearRegression()
     lr_sda.fit(x_sda, y_temp)
