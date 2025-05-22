@@ -326,6 +326,8 @@ def greedy_search(train_x, train_y, valid_x, valid_y, n_samples_per_task, n_samp
 
     if all_pvals[-1] > alpha:
         accepted_subset = np.array([])
+    else:
+        accepted_subset = None
 
     # Step 2: Loop over subsets of features
     while stay:
