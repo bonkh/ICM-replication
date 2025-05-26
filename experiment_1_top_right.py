@@ -16,7 +16,7 @@ from plotting import *
 np.random.seed(1234)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--save_dir', default = '../results')
+parser.add_argument('--save_dir', default = 'Experiment_01_top_right')
 parser.add_argument('--n_task', default=7)
 parser.add_argument('--n_noise', default=30)
 parser.add_argument('--merge_dica', default=0)
@@ -37,10 +37,6 @@ args = parser.parse_args()
 
 save_dir = args.save_dir
 
-if not os.path.exists(save_dir):
-  os.makedirs(save_dir)
-
-save_dir = os.path.join(save_dir, 'Experiment_01_top_right')
 if not os.path.exists(save_dir):
   os.makedirs(save_dir)
 
@@ -159,6 +155,7 @@ for rep in range(n_repeat):
 
     #mSDA
     # p_linsp = np.linspace(0,1,10)
+    # p_linsp = np.linspace(0.001,0.999,10)
     p_linsp = np.linspace(0,1,10)
     p_cv = mSDA_cv(p_linsp, x_temp, y_temp, n_cv = t)
     fit_sda = mSDA(x_temp.T,p_cv,1)
@@ -183,4 +180,4 @@ with open(os.path.join(save_dir, file_name+'.pkl'),'wb') as f:
   pickle.dump(save_all, f)
 
 #Create plot
-plotting.plot_tl(os.path.join(save_dir, file_name + '.pkl'))
+plot_tl(os.path.join(save_dir, file_name + '.pkl'))
