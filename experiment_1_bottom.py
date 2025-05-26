@@ -31,7 +31,7 @@ parser.add_argument('--lambd', default = 0.5)
 parser.add_argument('--lambd_test', default = 0.99)
 parser.add_argument('--use_hsic', default = 0)
 parser.add_argument('--alpha_test', default = 0.05)
-parser.add_argument('--n_repeat', default = 100)
+parser.add_argument('--n_repeat', default = 1)
 parser.add_argument('--max_l', default = 100)
 parser.add_argument('--n_ul', default = 100)
 args = parser.parse_args()
@@ -128,7 +128,8 @@ for rep in range(n_repeat):
     results['strue'][rep, index] = utils.mse(lr_true_temp,x_test[:,true_s], y_test)
 
     #mSDA
-    p = np.linspace(0,1,10)
+    # p = np.linspace(0,1,10)
+    p_linsp = np.linspace(0.001,0.999,10)
     p_cv = mSDA_cv(p, x_temp, y_temp, n_cv = t)
     fit_sda = mSDA(x_temp.T,p_cv,1)
     x_sda = fit_sda[-1][-1].T
