@@ -1,4 +1,3 @@
-
 import numpy as np
 import scipy as sc
 
@@ -11,16 +10,9 @@ import sys
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
-import matplotlib.pyplot as pl
+import matplotlib.pyplot as plt
 
-def linear(X,params):
-	alphaC = params[0]
-	return alphaC * X 
-
-def zero(X,params):
-	return 0.
-
-
+# Generate multivariate normal guasian samples
 def gen_gauss(mu, sigma, n):
   return np.random.multivariate_normal(mu, sigma, n)
 
@@ -55,7 +47,6 @@ def gen_noise(shape):
   return np.random.normal(0,1,shape)
 
 def covs_all(n_task, p_s, p_n, mask = None):
-
   cov_s, cov_n = [], []
   fix = -1
   ref = None
