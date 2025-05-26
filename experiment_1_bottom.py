@@ -9,7 +9,7 @@ import data
 import subset_search
 import utils
 import plotting
-import msda
+from msda import *
 import timeit
 
 import pickle
@@ -18,7 +18,7 @@ import os
 np.random.seed(1234)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--save_dir', default = '../results')
+parser.add_argument('--save_dir', default = 'Experiment_01_bottom')
 parser.add_argument('--n_task', default=13)
 parser.add_argument('--merge_dica', default=0)
 parser.add_argument('--n', default=1000)
@@ -38,10 +38,6 @@ args = parser.parse_args()
 
 save_dir = args.save_dir
 
-if not os.path.exists(save_dir):
-  os.makedirs(save_dir)
-
-save_dir = os.path.join(save_dir, 'fig4_bottom')
 if not os.path.exists(save_dir):
   os.makedirs(save_dir)
 
@@ -96,8 +92,8 @@ color_dict, markers, legends = utils.get_color_dict()
 for m in methods:
   results[m]  = np.zeros((n_repeat, n_train_tasks.size))
 
-for rep in xrange(n_repeat):
-  print rep
+for rep in range(n_repeat):
+  print(rep)
   x_train, y_train = dataset.resample(n_task, n)
 
   x_test = dataset.test['x_test']
