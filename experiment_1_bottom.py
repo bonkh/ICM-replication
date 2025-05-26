@@ -129,7 +129,7 @@ for rep in range(n_repeat):
 
     #mSDA
     # p = np.linspace(0,1,10)
-    p_linsp = np.linspace(0.001,0.999,10)
+    p = np.linspace(0.001,0.999,10)
     p_cv = mSDA_cv(p, x_temp, y_temp, n_cv = t)
     fit_sda = mSDA(x_temp.T,p_cv,1)
     x_sda = fit_sda[-1][-1].T
