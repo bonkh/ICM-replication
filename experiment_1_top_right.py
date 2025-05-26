@@ -43,7 +43,7 @@ if not os.path.exists(save_dir):
 #If only plot is true, loads results, merges with DICA and plots again. 
 if int(args.merge_dica) == 1:
     utils.merge_results('results.pkl', 'dica.pkl', 'dica', save_dir)
-    plotting.plot_tl(os.path.join(save_dir, 'merged.pkl'), ylim=4)
+    plot_tl(os.path.join(save_dir, 'merged.pkl'), ylim=4)
     exit()
 
 n_task = int(args.n_task)
@@ -155,8 +155,8 @@ for rep in range(n_repeat):
 
     #mSDA
     # p_linsp = np.linspace(0,1,10)
-    # p_linsp = np.linspace(0.001,0.999,10)
-    p_linsp = np.linspace(0,1,10)
+    p_linsp = np.linspace(0.001,0.999,10)
+    # p_linsp = np.linspace(0,1,10)
     p_cv = mSDA_cv(p_linsp, x_temp, y_temp, n_cv = t)
     fit_sda = mSDA(x_temp.T,p_cv,1)
     x_sda = fit_sda[-1][-1].T
