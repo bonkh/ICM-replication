@@ -1,9 +1,6 @@
 
 import numpy as np
 from sklearn import linear_model
-
-from sklearn.metrics.pairwise import rbf_kernel
-import matplotlib.pyplot as plt
 import argparse
 import subset_search
 import  pickle
@@ -11,7 +8,6 @@ import os
 from data import *
 from utils import *
 from msda import *
-from dica import *
 from plotting import *
 np.random.seed(1234)
 
@@ -29,7 +25,7 @@ parser.add_argument('--lambd', default = 0.5)
 parser.add_argument('--lambd_test', default = 0.99)
 parser.add_argument('--use_hsic', default = 0)
 parser.add_argument('--alpha_test', default = 0.05)
-parser.add_argument('--n_repeat', default = 100)
+parser.add_argument('--n_repeat', default = 1)
 parser.add_argument('--max_l', default = 100)
 parser.add_argument('--n_ul', default = 100)
 args = parser.parse_args()
@@ -39,9 +35,6 @@ save_dir = args.save_dir
 if not os.path.exists(save_dir):
   os.makedirs(save_dir)
 
-# save_dir = os.path.join(save_dir, 'fig4_tleft')
-# if not os.path.exists(save_dir):
-#   os.makedirs(save_dir)
 
 n_task = int(args.n_task)
 n = int(args.n)
@@ -59,6 +52,7 @@ alpha_test = float(args.alpha_test)
 use_hsic = bool(int(args.use_hsic))
 
 dataset = gauss_tl(n_task, n, p, p_s, p_conf, eps ,g, lambd, lambd_test)
+
 x_train = dataset.train['x_train']
 y_train = dataset.train['y_train']
 n_ex = dataset.train['n_ex']
@@ -103,6 +97,8 @@ for rep in range(n_repeat):
     print("Task", t)
     x_temp = x_train[0:np.cumsum(n_ex)[t], :]
     y_temp = y_train[0:np.cumsum(n_ex)[t], :]
+
+    print(len(x_temp))
 
     # ************** 1. Pooled *********************
     lr_temp = linear_model.LinearRegression()

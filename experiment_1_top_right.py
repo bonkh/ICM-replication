@@ -1,9 +1,6 @@
 
 import numpy as np
 from sklearn import linear_model
-
-from sklearn.metrics.pairwise import rbf_kernel
-import matplotlib.pyplot as plt
 import argparse
 import subset_search
 import  pickle
@@ -11,7 +8,6 @@ import os
 from data import *
 from utils import *
 from msda import *
-from dica import *
 from plotting import *
 np.random.seed(1234)
 
