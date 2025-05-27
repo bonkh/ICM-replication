@@ -51,6 +51,47 @@ def split_by_causes(filtered_data, gene_causes):
             non_causal_dict[target] = non_causal
 
     return causal_dict, non_causal_dict
+
+from scipy.stats import pearsonr
+
+def split_by_causes_v2(filtered_data, gene_causes, int_pos_data, obs_data):
+    causal_dict = {}
+    non_causal_dict = {}
+
+    intervened_genes = set(int_pos_data['Mutant'])
+
+    for target, predictors in filtered_data.items():
+        known_causes = set(gene_causes.get(target, []))
+        causal = [g for g in predictors if g in known_causes]
+
+        if causal:
+            causal_dict[target] = causal
+            continue  # skip the rest, since it's a causal case
+
+        # Now handle non-causal case with correlation check
+        strong_non_causal = []
+
+        for g in predictors:
+            if g not in intervened_genes:
+                continue  # only consider predictors that were intervened on
+
+            if g not in obs_data.columns or target not in obs_data.columns:
+                continue  # skip if missing in obs data
+
+            try:
+                corr, pval = pearsonr(obs_data[g], obs_data[target])
+                # if pval == 0.0:
+                if pval < 1e-10 and abs(corr) > 0.75:
+                    strong_non_causal.append(g)
+            except Exception:
+                continue
+
+        if strong_non_causal:
+            non_causal_dict[target] = strong_non_causal
+
+    return causal_dict, non_causal_dict
+
+
 alpha_test = 0.05
 use_hsic = 1
 
@@ -63,9 +104,9 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
     gene_dict: {target_gene: [top10_predictors]}
     algorithm1_fn: function like def algorithm1_fn(X, y, predictors): return list of invariant predictors
     """
-    for target_gene, intervented_gene_list in intervened_gene_dict.items():
+    for idx, (target_gene, intervented_gene_list) in enumerate(intervened_gene_dict.items(), start=1):
 
-        print(f'Target_gene: {target_gene}')
+        print(f"************* Target Gene #{idx}: {target_gene} *******************")
        
         top10_predictors = top_10_gene_dict[target_gene]
 
@@ -131,12 +172,16 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
             # ***** Causal ******
             if target_gene in gene_causes:
                 causal_cause = gene_causes[target_gene]
+                if isinstance(causal_cause, str):
+                    causal_cause = [causal_cause]
+
+
 
                 X_obs_causal = obs_data[causal_cause]
                 X_int_causal = int_data_subset[causal_cause]
 
-                X_causal = pd.concat([X_obs_causal, X_int_causal], axis=0).to_frame()
-                X_test = int_data.loc[[held_out_idx], causal_cause].to_frame()
+                X_causal = pd.concat([X_obs_causal, X_int_causal], axis=0)
+                X_test = int_data.loc[[held_out_idx], causal_cause]
 
 
       
@@ -168,6 +213,7 @@ def plot_all_errors(results, output_pdf='all_error_boxplots.pdf'):
         patch_artist=True,
         boxprops=dict(facecolor='lightblue'),
         medianprops=dict(color='red'),
+        showfliers=False 
     )
 
     # Set labels and title

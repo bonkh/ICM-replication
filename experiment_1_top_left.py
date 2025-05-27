@@ -11,7 +11,7 @@ from msda import *
 from dica import *
 from plotting import *
 np.random.seed(1234)
-
+ 
 parser = argparse.ArgumentParser()
 parser.add_argument('--save_dir', default = 'Experiment_01_top_left')
 parser.add_argument('--n_task', default=7)
@@ -24,7 +24,7 @@ parser.add_argument('--eps', default = 2)
 parser.add_argument('--g', default = 1)
 parser.add_argument('--lambd', default = 0.5)
 parser.add_argument('--lambd_test', default = 0.99)
-parser.add_argument('--use_hsic', default = 0)
+parser.add_argument('--use_hsic', default = 1)
 parser.add_argument('--alpha_test', default = 0.05)
 parser.add_argument('--n_repeat', default = 100)
 parser.add_argument('--max_l', default = 100)
@@ -119,6 +119,9 @@ for rep in range(n_repeat):
     print (f'3. Subset search')
 
     if p<10:
+
+      print(f'X shape: {x_temp.shape}')
+      print (f'y shape: {y_temp.shape}')
       s_hat = subset_search.subset(x_temp, y_temp, n_ex[0:t], 
                                    delta=alpha_test, valid_split=0.6, 
                                    use_hsic=use_hsic)

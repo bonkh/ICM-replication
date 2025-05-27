@@ -127,6 +127,7 @@ def draw_tasks(n_task, n, params):
     y_k     = np.dot(xs_k, alpha) + eps*eps_draw
     gamma_k = gamma[k]
     noise_k = (g*gen_gauss(mu_n, cov_n[k], n))
+    
     xn_k = np.dot(y_k, gamma_k.T) + noise_k
     beta_k  = beta[k]
 

@@ -26,7 +26,7 @@ nodes = pd.read_csv('node.csv')
 with open('top10_predictors_per_gene.json', 'r') as f:
     data = json.load(f)
 
-
+print(f' data: {len(data)}')
 intervened_genes = set(int_pos_data['Mutant'])
 print(len(intervened_genes))
 
@@ -34,17 +34,22 @@ filtered_data = filter_predictors_by_intervention(data, intervened_genes)
 print(len(filtered_data)) 
 
 
-with open('top_correlation_causes.json', 'r') as f:
+with open('icp_resample_causal_genes.json', 'r') as f:
     gene_causes = json.load(f)
 
-causal_dict, non_causal_dict = split_by_causes(filtered_data, gene_causes)
+causal_dict, non_causal_dict = split_by_causes_v2(filtered_data, gene_causes, int_pos_data, obs_data)
 
-print("Causal targets:", len(causal_dict))
-print("Non-causal targets:", len(non_causal_dict))
+print("Causal scenarios:", len(causal_dict))
+print("Non-causal scenarios:", len(non_causal_dict))
 
-result = evaluate_gene_invariance(non_causal_dict, data, obs_data, int_data, int_pos_data, gene_causes)
+causal_result = evaluate_gene_invariance(causal_dict, data, obs_data, int_data, int_pos_data, gene_causes)
+with open("causal_result.json", "w") as f:
+    json.dump(causal_result, f, indent=2)
 
-plot_all_errors(result)
+plot_all_errors(causal_result)
+
+
+
 # target_gene = 'YAL061W'
 # intervened_gene = 'YOR173W'
 # int_rows = int_pos_data[int_pos_data['Mutant'] == intervened_gene].index
