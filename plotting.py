@@ -7,7 +7,7 @@ from sklearn import linear_model
 import matplotlib.pyplot as plt
 from matplotlib import rc
 
-import data
+import Rewrite.data as data
 import subset_search
 import utils
 import  pickle

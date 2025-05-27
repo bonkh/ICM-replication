@@ -5,7 +5,7 @@ import numpy as np
 from sklearn import linear_model
 import argparse
 
-import data
+import Rewrite.data as data
 import subset_search
 import utils
 import plotting

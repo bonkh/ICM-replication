@@ -6,8 +6,8 @@ import seaborn as sns
 import pandas as pd 
 
 save_dir = 'Experiment_01_top_left'
-# file_name = 'tl_norm__100_2.0_1.0_0.5.pkl'
-file_name = 'tl_norm__100_2.0_1.0_0.5_02.pkl'
+file_name = 'tl_norm__100_2.0_1.0_0.5.pkl'
+# file_name = 'tl_norm__100_2.0_1.0_0.5_02.pkl'
 # file_name = 'tl_norm__100_2.0_1.0_0.5_03.pkl'
 
 # Full path to the file

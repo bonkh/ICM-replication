@@ -1,4 +1,6 @@
 import numpy as np
+from sklearn import linear_model
+
 def get_color_dict():
 
   colors = {
@@ -101,3 +103,10 @@ def lasso_alpha_search_synt(X,Y):
 
     return mask
 
+
+
+def train_linear_and_eval(x, y, x_test, y_test):
+    model = linear_model.LinearRegression()
+    model.fit(x, y)
+    result = mse(model, x_test, y_test)
+    return result
