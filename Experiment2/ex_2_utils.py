@@ -205,14 +205,15 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
             #     result['shat'].append (error_mean)
 
             detailed_result.append({
-                'target_gene': target_gene,
-                'intervened_gene': intervened_gene,
-                'top10_predictors': top10_predictors,
-                's_hat_genes': selected_genes,
-                'mse_shat': mse_s_hat,
-                'causal_cause': causal_cause,
-                'mse_causal': mse_causal
+            'target_gene': target_gene,
+            'intervened_gene': intervened_gene,
+            'top10_predictors': list(top10_predictors),  
+            's_hat_genes': list(selected_genes),          # convert to list
+            'mse_shat': mse_s_hat,
+            'causal_cause': list(causal_cause),           # convert to list
+            'mse_causal': mse_causal
             })
+
 
     return result, detailed_result
 
