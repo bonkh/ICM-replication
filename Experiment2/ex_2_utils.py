@@ -104,6 +104,7 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
     gene_dict: {target_gene: [top10_predictors]}
     algorithm1_fn: function like def algorithm1_fn(X, y, predictors): return list of invariant predictors
     """
+    detailed_result = []
     for idx, (target_gene, intervented_gene_list) in enumerate(intervened_gene_dict.items(), start=1):
 
         print(f"************* Target Gene #{idx}: {target_gene} *******************")
@@ -111,7 +112,7 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
         top10_predictors = top_10_gene_dict[target_gene]
 
         for intervened_gene in intervented_gene_list:
-            print(f'Inter gene: {intervened_gene}')
+            print(f'    Inter gene: {intervened_gene}')
 
             int_rows = int_pos_data[int_pos_data['Mutant'] == intervened_gene].index
     
@@ -156,8 +157,8 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
             
             s_hat = subset(X, y, n_ex, delta=alpha_test, valid_split=0.6, use_hsic=use_hsic)
             selected_genes = X.columns[s_hat]
-            print(f"------- Top 10 lasso genes: {X.columns} ---------")
-            print(f"------- S hat (selected genes): {list(selected_genes)} ---------")
+            print(f"        Top 10 lasso genes: {X.columns} ---------")
+            print(f"        S hat (selected genes): {list(selected_genes)} ---------")
 
             if s_hat.size> 0:
                 lr_s_hat = linear_model.LinearRegression()
@@ -165,8 +166,9 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
 
                 selected_features = X.columns[s_hat]
                 X_test = int_data[top10_predictors].loc[[held_out_idx], selected_features]
-                result['shat'].append(mse(lr_s_hat, X_test, y_test))
-                print(f'The error: {mse(lr_s_hat, X_test, y_test)}')
+                mse_s_hat = mse(lr_s_hat, X_test, y_test)
+                result['shat'].append(mse_s_hat)
+                print(f'The error: {mse_s_hat}')
                 
                 del lr_s_hat
                 gc.collect()
@@ -174,32 +176,45 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
                 result['shat'].append (error_mean)
 
             # ***** Causal ******
-            if target_gene in gene_causes:
+            mse_causal = None
+
+            causal_cause = gene_causes.get(target_gene, [])
+
+            if isinstance(causal_cause, str):
+                causal_cause = [causal_cause]
+
+            if len(causal_cause) > 0:
                 causal_cause = gene_causes[target_gene]
-                print (f'------- Causal cause: {causal_cause} ---------')
-                if isinstance(causal_cause, str):
-                    causal_cause = [causal_cause]
-
-
+                print (f'       Causal cause: {causal_cause} ---------')
 
                 X_obs_causal = obs_data[causal_cause]
                 X_int_causal = int_data_subset[causal_cause]
 
                 X_causal = pd.concat([X_obs_causal, X_int_causal], axis=0)
                 X_test = int_data.loc[[held_out_idx], causal_cause]
-
-
       
                 lr_true_causal = linear_model.LinearRegression()
                 lr_true_causal.fit(X_causal, y)
                 
-                result['strue'].append(mse(lr_true_causal,X_test, y_test))
-                print(f'---- The causal error: {mse(lr_true_causal,X_test, y_test)}-----------')
+                mse_causal = mse(lr_true_causal,X_test, y_test)
+                
+                result['strue'].append(mse_causal)
+                print(f'        The causal error: {mse_causal}-----------')
                 
             # else:
             #     result['shat'].append (error_mean)
 
-    return result
+            detailed_result.append({
+                'target_gene': target_gene,
+                'intervened_gene': intervened_gene,
+                'top10_predictors': top10_predictors,
+                's_hat_genes': selected_genes,
+                'mse_shat': mse_s_hat,
+                'causal_cause': causal_cause,
+                'mse_causal': mse_causal
+            })
+
+    return result, detailed_result
 
 def plot_all_errors(results, output_pdf='all_error_boxplots.pdf'):
     if not results:
