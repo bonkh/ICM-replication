@@ -155,7 +155,8 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
             n_ex = [n_obs, n_int]
             
             s_hat = subset(X, y, n_ex, delta=alpha_test, valid_split=0.6, use_hsic=use_hsic)
-            print (f'------- S hat : {s_hat} ---------')
+            selected_genes = X.columns[s_hat]
+            print(f"------- S hat (selected genes): {list(selected_genes)} ---------")
 
             if s_hat.size> 0:
                 lr_s_hat = linear_model.LinearRegression()
