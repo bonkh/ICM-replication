@@ -155,6 +155,7 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
             n_ex = [n_obs, n_int]
             
             s_hat = subset(X, y, n_ex, delta=alpha_test, valid_split=0.6, use_hsic=use_hsic)
+            print (f'------- S hat : {s_hat} ---------')
 
             if s_hat.size> 0:
                 lr_s_hat = linear_model.LinearRegression()
@@ -163,6 +164,7 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
                 selected_features = X.columns[s_hat]
                 X_test = int_data[top10_predictors].loc[[held_out_idx], selected_features]
                 result['shat'].append(mse(lr_s_hat, X_test, y_test))
+                print(f'The error: {mse(lr_s_hat, X_test, y_test)}')
                 
                 del lr_s_hat
                 gc.collect()
@@ -172,6 +174,7 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
             # ***** Causal ******
             if target_gene in gene_causes:
                 causal_cause = gene_causes[target_gene]
+                print (f'------- Causal cause: {causal_cause} ---------')
                 if isinstance(causal_cause, str):
                     causal_cause = [causal_cause]
 
@@ -189,8 +192,10 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
                 lr_true_causal.fit(X_causal, y)
                 
                 result['strue'].append(mse(lr_true_causal,X_test, y_test))
-            else:
-                result['shat'].append (error_mean)
+                print(f'---- The causal error: {mse(lr_true_causal,X_test, y_test)}-----------')
+                
+            # else:
+            #     result['shat'].append (error_mean)
 
     return result
 

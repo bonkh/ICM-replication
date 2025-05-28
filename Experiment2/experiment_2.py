@@ -34,7 +34,7 @@ filtered_data = filter_predictors_by_intervention(data, intervened_genes)
 print(len(filtered_data)) 
 
 
-with open('icp_resample_causal_genes.json', 'r') as f:
+with open('icp_resample_causal_genes copy.json', 'r') as f:
     gene_causes = json.load(f)
 
 causal_dict, non_causal_dict = split_by_causes_v2(filtered_data, gene_causes, int_pos_data, obs_data)
@@ -42,11 +42,11 @@ causal_dict, non_causal_dict = split_by_causes_v2(filtered_data, gene_causes, in
 print("Causal scenarios:", len(causal_dict))
 print("Non-causal scenarios:", len(non_causal_dict))
 
-non_causal_result = evaluate_gene_invariance(non_causal_dict, data, obs_data, int_data, int_pos_data, gene_causes)
-with open("non_causal_result.json", "w") as f:
-    json.dump(non_causal_result, f, indent=2)
+# non_causal_result = evaluate_gene_invariance(non_causal_dict, data, obs_data, int_data, int_pos_data, gene_causes)
+# with open("non_causal_result.json", "w") as f:
+#     json.dump(non_causal_result, f, indent=2)
 
-plot_all_errors(non_causal_result)
+# plot_all_errors(non_causal_result)
 
 
 
