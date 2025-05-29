@@ -174,7 +174,7 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
 
             if scenario == 'causal':
                 mse_causal = linear_mse
-                result['strue'] = linear_mse
+                result['strue'].append(linear_mse)
             elif scenario == 'non-causal':
                 if intervened_gene in top10_predictors:
                     predictors_wo_intervened = [g for g in top10_predictors if g != intervened_gene]
@@ -185,6 +185,8 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
                 X_int_causal = int_data_subset[predictors_wo_intervened]
                 X_causal = pd.concat([X_obs_causal, X_int_causal], axis=0)
                 X_test = int_data.loc[[held_out_idx], predictors_wo_intervened]
+
+                print(X_causal.shape)
 
                 lr_causal_wo_intervened = linear_model.LinearRegression()
                 lr_causal_wo_intervened.fit(X_causal, y)
