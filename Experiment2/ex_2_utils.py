@@ -99,7 +99,7 @@ result = defaultdict(list)
 
 
 
-def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, int_data, int_pos_data, gene_causes):
+def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, int_data, int_pos_data, gene_causes, scenario):
     """
     gene_dict: {target_gene: [top10_predictors]}
     algorithm1_fn: function like def algorithm1_fn(X, y, predictors): return list of invariant predictors
@@ -143,7 +143,8 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
             lr_pool = linear_model.LinearRegression()
             lr_pool.fit(X, y)
             X_test = int_data[top10_predictors].loc[[held_out_idx],:]
-            result['pool'].append (mse(lr_pool, X_test, y_test))
+            linear_mse = mse(lr_pool, X_test, y_test)
+            result['pool'].append (linear_mse)
 
             #  ******* Mean ********
             error_mean = np.mean((y_test - np.mean(y)) ** 2)
@@ -176,30 +177,49 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
                 result['shat'].append (error_mean)
 
             # ***** Causal ******
-            mse_causal = None
 
-            causal_cause = gene_causes.get(target_gene, [])
+            if scenario == 'causal':
+                result['strue'] = linear_mse
+            elif scenario == 'non-causal':
+                if intervened_gene in top10_predictors:
+                    predictors_wo_intervened = [g for g in top10_predictors if g != intervened_gene]
+                else:
+                    predictors_wo_intervened = top10_predictors
 
-            if isinstance(causal_cause, str):
-                causal_cause = [causal_cause]
-
-            if len(causal_cause) > 0:
-                causal_cause = gene_causes[target_gene]
-                print (f'       Causal cause: {causal_cause} ---------')
-
-                X_obs_causal = obs_data[causal_cause]
-                X_int_causal = int_data_subset[causal_cause]
-
+                X_obs_causal = obs_data[predictors_wo_intervened]
+                X_int_causal = int_data_subset[predictors_wo_intervened]
                 X_causal = pd.concat([X_obs_causal, X_int_causal], axis=0)
-                X_test = int_data.loc[[held_out_idx], causal_cause]
-      
-                lr_true_causal = linear_model.LinearRegression()
-                lr_true_causal.fit(X_causal, y)
-                
-                mse_causal = mse(lr_true_causal,X_test, y_test)
-                
+                X_test = int_data.loc[[held_out_idx], predictors_wo_intervened]
+
+                lr_causal_wo_intervened = linear_model.LinearRegression()
+                lr_causal_wo_intervened.fit(X_causal, y)
+                mse_causal = mse(lr_causal_wo_intervened, X_test, y_test)
                 result['strue'].append(mse_causal)
-                print(f'        The causal error: {mse_causal}-----------')
+
+            # mse_causal = None
+
+            # causal_cause = gene_causes.get(target_gene, [])
+
+            # if isinstance(causal_cause, str):
+            #     causal_cause = [causal_cause]
+
+            # if len(causal_cause) > 0:
+            #     causal_cause = gene_causes[target_gene]
+            #     print (f'       Causal cause: {causal_cause} ---------')
+
+            #     X_obs_causal = obs_data[causal_cause]
+            #     X_int_causal = int_data_subset[causal_cause]
+
+            #     X_causal = pd.concat([X_obs_causal, X_int_causal], axis=0)
+            #     X_test = int_data.loc[[held_out_idx], causal_cause]
+      
+            #     lr_true_causal = linear_model.LinearRegression()
+            #     lr_true_causal.fit(X_causal, y)
+                
+            #     mse_causal = mse(lr_true_causal,X_test, y_test)
+                
+            #     result['strue'].append(mse_causal)
+            #     print(f'        The causal error: {mse_causal}-----------')
                 
             # else:
             #     result['shat'].append (error_mean)
@@ -208,9 +228,8 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
             'target_gene': target_gene,
             'intervened_gene': intervened_gene,
             'top10_predictors': list(top10_predictors),  
-            's_hat_genes': list(selected_genes),          # convert to list
-            'mse_shat': mse_s_hat,
-            'causal_cause': list(causal_cause),           # convert to list
+            's_hat_genes': list(selected_genes),     
+            'mse_shat': mse_s_hat,    
             'mse_causal': mse_causal
             })
 
