@@ -6,6 +6,7 @@ from collections import defaultdict
 import gc
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from scipy.stats import pearsonr
 import json
 
 
@@ -27,20 +28,21 @@ def filter_predictors_by_intervention(data, intervened_genes):
     Returns:
     - new_dict: filtered dictionary with predictors that are in intervened_genes.
     """
-    new_dict = {}
+    intervened_dict = {}
 
     for target_gene, predictors in data.items():
         filtered = [gene for gene in predictors if gene in intervened_genes]
         if filtered:
-            new_dict[target_gene] = filtered
+            intervened_dict[target_gene] = filtered
 
-    return new_dict
+    return intervened_dict
 
 def split_by_causes(filtered_data, gene_causes):
     causal_dict = {}
     non_causal_dict = {}
 
     for target, predictors in filtered_data.items():
+
         known_causes = set(gene_causes.get(target, []))
         causal = [g for g in predictors if g in known_causes]
         non_causal = [g for g in predictors if g not in known_causes]
@@ -52,7 +54,7 @@ def split_by_causes(filtered_data, gene_causes):
 
     return causal_dict, non_causal_dict
 
-from scipy.stats import pearsonr
+
 
 def split_by_causes_v2(filtered_data, gene_causes, int_pos_data, obs_data):
     causal_dict = {}
@@ -66,17 +68,15 @@ def split_by_causes_v2(filtered_data, gene_causes, int_pos_data, obs_data):
 
         if causal:
             causal_dict[target] = causal
-            continue  # skip the rest, since it's a causal case
+            continue
 
         # Now handle non-causal case with correlation check
         strong_non_causal = []
 
         for g in predictors:
-            if g not in intervened_genes:
-                continue  # only consider predictors that were intervened on
 
             if g not in obs_data.columns or target not in obs_data.columns:
-                continue  # skip if missing in obs data
+                continue 
 
             try:
                 corr, pval = pearsonr(obs_data[g], obs_data[target])
@@ -94,16 +94,10 @@ def split_by_causes_v2(filtered_data, gene_causes, int_pos_data, obs_data):
 
 alpha_test = 0.05
 use_hsic = 1
-
 result = defaultdict(list)
 
-
-
 def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, int_data, int_pos_data, gene_causes, scenario):
-    """
-    gene_dict: {target_gene: [top10_predictors]}
-    algorithm1_fn: function like def algorithm1_fn(X, y, predictors): return list of invariant predictors
-    """
+
     detailed_result = []
     for idx, (target_gene, intervented_gene_list) in enumerate(intervened_gene_dict.items(), start=1):
 
@@ -179,6 +173,7 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
             # ***** Causal ******
 
             if scenario == 'causal':
+                mse_causal = linear_mse
                 result['strue'] = linear_mse
             elif scenario == 'non-causal':
                 if intervened_gene in top10_predictors:
@@ -195,34 +190,6 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
                 lr_causal_wo_intervened.fit(X_causal, y)
                 mse_causal = mse(lr_causal_wo_intervened, X_test, y_test)
                 result['strue'].append(mse_causal)
-
-            # mse_causal = None
-
-            # causal_cause = gene_causes.get(target_gene, [])
-
-            # if isinstance(causal_cause, str):
-            #     causal_cause = [causal_cause]
-
-            # if len(causal_cause) > 0:
-            #     causal_cause = gene_causes[target_gene]
-            #     print (f'       Causal cause: {causal_cause} ---------')
-
-            #     X_obs_causal = obs_data[causal_cause]
-            #     X_int_causal = int_data_subset[causal_cause]
-
-            #     X_causal = pd.concat([X_obs_causal, X_int_causal], axis=0)
-            #     X_test = int_data.loc[[held_out_idx], causal_cause]
-      
-            #     lr_true_causal = linear_model.LinearRegression()
-            #     lr_true_causal.fit(X_causal, y)
-                
-            #     mse_causal = mse(lr_true_causal,X_test, y_test)
-                
-            #     result['strue'].append(mse_causal)
-            #     print(f'        The causal error: {mse_causal}-----------')
-                
-            # else:
-            #     result['shat'].append (error_mean)
 
             detailed_result.append({
             'target_gene': target_gene,
