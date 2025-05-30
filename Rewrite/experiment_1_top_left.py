@@ -1,9 +1,17 @@
+import sys
+import os
+
+# Add the parent directory to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+
 import numpy as np
 from sklearn import linear_model
 import argparse
 import subset_search
 import pickle
-import os
+# import os
+
 from data import *
 from utils import *
 from msda import *
