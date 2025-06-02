@@ -57,8 +57,8 @@ x_train = dataset.train['x_train']
 y_train = dataset.train['y_train']
 n_ex = dataset.train['n_ex']
 
-lr = linear_model.LinearRegression()
-lr.fit(x_train, y_train)
+# lr = linear_model.LinearRegression()
+# lr.fit(x_train, y_train)
 
 # Define test
 x_test = dataset.test['x_test']
@@ -100,8 +100,8 @@ for rep in range(n_repeat):
 
     lasso_mask =  lasso_alpha_search_synt(x_train, y_train)
     lasso_locs = np.where(lasso_mask == True)[0]
-    x_train = x_train[:,lasso_mask]
-    x_test = x_test[:,lasso_mask]
+    x_train_subset_search = x_train[:,lasso_mask]
+    x_test_subset_search = x_test[:,lasso_mask]
     p = x_train.shape[1]
 
 
@@ -130,14 +130,17 @@ for rep in range(n_repeat):
         print (f'3. Subset search')
 
         if p<12:
-            s_hat = subset_search.subset(x_temp, y_temp, n_ex[0:t], delta=alpha_test, 
+            
+            x_temp_subset_search = x_train_subset_search[0:np.cumsum(n_ex)[t], :]
+        
+            s_hat = subset_search.subset(x_temp_subset_search, y_temp, n_ex[0:t], delta=alpha_test, 
                                     valid_split=0.6, use_hsic=use_hsic)
 
         if p<12:
             if s_hat.size> 0:
                 lr_s_temp = linear_model.LinearRegression()
-                lr_s_temp.fit(x_temp[:,s_hat], y_temp)
-                results['shat'][rep, index] = utils.mse(lr_s_temp,x_test[:,s_hat], y_test)
+                lr_s_temp.fit(x_temp_subset_search[:,s_hat], y_temp)
+                results['shat'][rep, index] = utils.mse(lr_s_temp,x_test_subset_search[:,s_hat], y_test)
 
                 del lr_s_temp
                 gc.collect()
