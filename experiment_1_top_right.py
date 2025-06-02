@@ -26,7 +26,7 @@ parser.add_argument('--lambd', default = 0.5)
 parser.add_argument('--lambd_test', default = 0.99)
 parser.add_argument('--use_hsic', default = 0)
 parser.add_argument('--alpha_test', default = 0.05)
-parser.add_argument('--n_repeat', default = 10)
+parser.add_argument('--n_repeat', default = 100)
 parser.add_argument('--max_l', default = 1000)
 parser.add_argument('--n_ul', default = 100)
 args = parser.parse_args()
@@ -98,10 +98,6 @@ for rep in range(n_repeat):
     x_train = np.append(x_train, x_noise, 1)
     x_test = np.append(x_test, x_test_noise, 1)
 
-    lasso_mask =  lasso_alpha_search_synt(x_train, y_train)
-    lasso_locs = np.where(lasso_mask == True)[0]
-    x_train_subset_search = x_train[:,lasso_mask]
-    x_test_subset_search = x_test[:,lasso_mask]
     p = x_train.shape[1]
 
 
@@ -128,6 +124,12 @@ for rep in range(n_repeat):
 
         # ************* 3. Estimated S_hat ***********
         print (f'3. Subset search')
+
+        lasso_mask =  lasso_alpha_search_synt(x_train, y_train)
+        lasso_locs = np.where(lasso_mask == True)[0]
+        x_train_subset_search = x_train[:,lasso_mask]
+        x_test_subset_search = x_test[:,lasso_mask]
+        print(f'X train subset: {x_train_subset_search.shape}')
 
         if p<12:
             
@@ -210,4 +212,4 @@ with open(os.path.join(save_dir, file_name+'.pkl'),'wb') as f:
   pickle.dump(save_all, f)
 
 #Create plot
-plot_tl(os.path.join(save_dir, file_name + '.pkl'))
+plot_tl(os.path.join(save_dir, file_name + '.pkl'),  ylim=4)
