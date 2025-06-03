@@ -1,0 +1,17 @@
+# Specify Python version (informational only for pip)
+python_version >= 3.12
+
+numpy
+pandas
+scikit-learn
+matplotlib
+scipy
+
+# The following are standard libraries and do NOT need to be included:
+# argparse, pickle, os, sys
+
+# You may still list them here as comments for clarity
+# argparse (standard lib)
+# pickle (standard lib)
+# os (standard lib)
+# sys (standard lib)
