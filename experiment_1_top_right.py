@@ -98,8 +98,6 @@ for rep in range(n_repeat):
     x_train = np.append(x_train, x_noise, 1)
     x_test = np.append(x_test, x_test_noise, 1)
 
-    p = x_train.shape[1]
-
 
     for index, t in np.ndenumerate(n_train_tasks):
         print (f'***** Number of tasks used: {t} ******')
@@ -130,6 +128,9 @@ for rep in range(n_repeat):
         x_train_subset_search = x_train[:,lasso_mask]
         x_test_subset_search = x_test[:,lasso_mask]
         print(f'X train subset: {x_train_subset_search.shape}')
+
+        p = x_train_subset_search.shape[1]
+
 
         if p<12:
             
