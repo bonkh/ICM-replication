@@ -29,25 +29,16 @@ def draw_cov(p):
     return cov
 
 
-# Generate task-specific coefficients for the non-causal features
-def gen_coef(coef_0, lambd, mask=None):
-    """
-    Generate coefficients for the non-causal features.
-    coef_0: Initial coefficients
-    lambd: Regularization parameter
-    mask: Mask for coefficients (optional)
-    """
 
-    if mask is None:
-      return (1 - lambd) * coef_0 + lambd * (
-                  np.random.normal(0, 1, coef_0.shape) + np.random.normal(0, 1)
-              )
-    mask_compl = ((mask + 1) % 2).astype(bool)
-    draw = np.random.normal(0, 1, coef_0.shape)
-    ret = (1 - lambd) * coef_0 + lambd * draw
+def gen_coef(coef_0, lambd, mask = None):
+  if not mask is None:
+    mask_compl = ((mask+1)%2).astype(bool)
+    draw = np.random.normal(0,1,coef_0.shape)
+    ret = (1-lambd)*coef_0 + lambd*draw
     ret[mask_compl] = coef_0[mask_compl]
     return ret
-
+  else:
+    return (1-lambd)*coef_0 + lambd*(np.random.normal(0,1,coef_0.shape) + np.random.normal(0,1))
 
 # Generate noise samples that follow a normal distribution
 def gen_noise(shape):
