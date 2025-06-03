@@ -24,25 +24,30 @@ edges = pd.read_csv("gene_network_edge.csv")
 nodes = pd.read_csv('node.csv')
 
 with open('top10_predictors_per_gene.json', 'r') as f:
-    data = json.load(f)
+    data_dict = json.load(f)
 
-print(f' data: {len(data)}')
+# data = pd.read_csv('lasso_10.csv')
+
+# data_dict = dict(zip(data['target_gene'], data['top10_predictors']))
+
+
+# print(f' data: {len(data_dict)}')
 intervened_genes = set(int_pos_data['Mutant'])
 print(len(intervened_genes))
 
-filtered_data = filter_predictors_by_intervention(data, intervened_genes)
-print(len(filtered_data)) 
+filtered_data = filter_predictors_by_intervention(data_dict, intervened_genes)
 
-
-with open('icp_resample_causal_genes copy.json', 'r') as f:
+ 
+with open('icp_resample_causal_genes.json', 'r') as f:
     gene_causes = json.load(f)
+
 
 causal_dict, non_causal_dict = split_by_causes_v2(filtered_data, gene_causes, int_pos_data, obs_data)
 
 print("Causal scenarios:", len(causal_dict))
 print("Non-causal scenarios:", len(non_causal_dict))
 
-non_causal_result, detailed_result = evaluate_gene_invariance(non_causal_dict, data, obs_data, int_data, int_pos_data, gene_causes, scenario = 'non-causal')
+non_causal_result, detailed_result = evaluate_gene_invariance(non_causal_dict, data_dict, obs_data, int_data, int_pos_data, gene_causes, scenario = 'non-causal')
 with open("non_causal_result.json", "w") as f:
     json.dump(non_causal_result, f, indent=2)
 with open("detailed_results.json", "w") as f:

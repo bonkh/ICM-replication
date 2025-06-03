@@ -109,14 +109,13 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
             print(f'    Inter gene: {intervened_gene}')
 
             int_rows = int_pos_data[int_pos_data['Mutant'] == intervened_gene].index
+            print(int_rows)
     
             if len(int_rows) == 0:
                 continue
 
             held_out_idx = int_rows[0]
 
-            if held_out_idx not in int_data.index:
-                continue
 
             # Create training data
             X_obs = obs_data[top10_predictors]
@@ -132,6 +131,7 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
             y = pd.concat([y_obs, y_int], axis=0).to_frame()
             
             y_test = int_data.loc[held_out_idx, target_gene]
+            print(y_test)
 
             # ******** Pool the data ********
             lr_pool = linear_model.LinearRegression()
@@ -205,30 +205,37 @@ def evaluate_gene_invariance(intervened_gene_dict, top_10_gene_dict, obs_data, i
 
     return result, detailed_result
 
+
+legends = {    'strue' : r'$\beta^{CS(cau)}$',
+              'shat' : r'$\beta^{CS(\hat S Lasso)}$',
+               'pool' : r'$\beta^{CS}$',
+              'mean'   : r'$\beta^{mean}$',
+            }
 def plot_all_errors(results, output_pdf='all_error_boxplots.pdf'):
     if not results:
         print("No results to plot.")
         return
 
-    # Filter out keys with empty lists
-    filtered_results = {k: v for k, v in results.items() if len(v) > 0}
-    if not filtered_results:
-        print("No non-empty error lists to plot.")
+    ordered_keys = [k for k in legends if k in results and len(results[k]) > 0]
+    if not ordered_keys:
+        print("No valid results to plot.")
         return
 
-    plt.figure(figsize=(10, 6))
+    # Prepare the data in order
+    data = [results[k] for k in ordered_keys]
+    labels = [legends[k] for k in ordered_keys]
 
-    # Create the boxplot
+    # Plot
+    plt.figure(figsize=(10, 6))
     plt.boxplot(
-        filtered_results.values(),
+        data,
         patch_artist=True,
         boxprops=dict(facecolor='lightblue'),
         medianprops=dict(color='red'),
-        showfliers=False 
+        showfliers=False
     )
 
-    # Set labels and title
-    plt.xticks(ticks=range(1, len(filtered_results) + 1), labels=filtered_results.keys())
+    plt.xticks(ticks=range(1, len(labels) + 1), labels=labels)
     plt.title('Boxplot of prediction errors by method')
     plt.ylabel('Mean Squared Error')
     plt.grid(True, linestyle='--', alpha=0.5)
