@@ -18,7 +18,7 @@ import os
 np.random.seed(1234)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--save_dir', default = 'Experiment_01_bottom')
+parser.add_argument('--save_dir', default = '_Experiment_01_bottom')
 parser.add_argument('--n_task', default=13)
 parser.add_argument('--merge_dica', default=0)
 parser.add_argument('--n', default=1000)

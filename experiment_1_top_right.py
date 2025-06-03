@@ -12,7 +12,7 @@ from plotting import *
 np.random.seed(1234)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--save_dir', default = 'Experiment_01_top_right')
+parser.add_argument('--save_dir', default = '_Experiment_01_top_right')
 parser.add_argument('--n_task', default=7)
 parser.add_argument('--n_noise', default=30)
 parser.add_argument('--merge_dica', default=0)
