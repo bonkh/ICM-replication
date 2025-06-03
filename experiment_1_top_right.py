@@ -24,7 +24,7 @@ parser.add_argument('--eps', default = 2)
 parser.add_argument('--g', default = 1)
 parser.add_argument('--lambd', default = 0.5)
 parser.add_argument('--lambd_test', default = 0.99)
-parser.add_argument('--use_hsic', default = 0)
+parser.add_argument('--use_hsic', default = 1)
 parser.add_argument('--alpha_test', default = 0.05)
 parser.add_argument('--n_repeat', default = 100)
 parser.add_argument('--max_l', default = 1000)
@@ -53,16 +53,16 @@ alpha_test = float(args.alpha_test)
 use_hsic = bool(int(args.use_hsic))
 
 dataset = data.gauss_tl(n_task, n, p, p_s, p_conf, eps ,g, lambd, lambd_test)
-x_train = dataset.train['x_train']
-y_train = dataset.train['y_train']
+# x_train = dataset.train['x_train']
+# y_train = dataset.train['y_train']
 n_ex = dataset.train['n_ex']
 
 # lr = linear_model.LinearRegression()
 # lr.fit(x_train, y_train)
 
 # Define test
-x_test = dataset.test['x_test']
-y_test = dataset.test['y_test']
+# x_test = dataset.test['x_test']
+# y_test = dataset.test['y_test']
 
 n_train_tasks = np.arange(2,n_task)
 n_repeat = int(args.n_repeat)
@@ -138,12 +138,13 @@ for rep in range(n_repeat):
         
             s_hat = subset_search.subset(x_temp_subset_search, y_temp, n_ex[0:t], delta=alpha_test, 
                                     valid_split=0.6, use_hsic=use_hsic)
+            print(s_hat)
 
         if p<12:
             if s_hat.size> 0:
                 lr_s_temp = linear_model.LinearRegression()
                 lr_s_temp.fit(x_temp_subset_search[:,s_hat], y_temp)
-                results['shat'][rep, index] = utils.mse(lr_s_temp,x_test_subset_search[:,s_hat], y_test)
+                results['shat'][rep, index] = mse(lr_s_temp,x_test_subset_search[:,s_hat], y_test)
 
                 del lr_s_temp
                 gc.collect()
