@@ -18,7 +18,7 @@ import os
 np.random.seed(1234)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--save_dir', default = '_Experiment_01_bottom')
+parser.add_argument('--save_dir', default = '__Experiment_01_bottom')
 parser.add_argument('--n_task', default=13)
 parser.add_argument('--merge_dica', default=0)
 parser.add_argument('--n', default=1000)
@@ -127,8 +127,8 @@ for rep in range(n_repeat):
     results['strue'][rep, index] = utils.mse(lr_true_temp,x_test[:,true_s], y_test)
 
     #mSDA
-    # p = np.linspace(0,1,10)
-    p = np.linspace(0.001,0.999,10)
+    p = np.linspace(0,1,10)
+    # p = np.linspace(0.001,0.999,10)
     p_cv = mSDA_cv(p, x_temp, y_temp, n_cv = t)
     fit_sda = mSDA(x_temp.T,p_cv,1)
     x_sda = fit_sda[-1][-1].T
