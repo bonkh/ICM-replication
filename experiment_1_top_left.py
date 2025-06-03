@@ -81,7 +81,6 @@ for m in methods:
   results[m]  = np.zeros((n_repeat, n_train_tasks.size))
 
 for rep in range(n_repeat):
-  print (f'******** REPEAT: {rep}**********') 
 
     
  
@@ -96,22 +95,17 @@ for rep in range(n_repeat):
     x_temp = x_train[0:np.cumsum(n_ex)[t], :]
     y_temp = y_train[0:np.cumsum(n_ex)[t], :]
 
-    print (f'***** Number of tasks used: {t} ******')
-    print (f'X_train shape: {x_temp.shape}')
     # start = get_memory_usage_gb()
 
 
     # ************** 1. Pooled *********************
-    print(f'1. Pooling the data')
     results['pool'][rep, index] = train_linear_and_eval(x_temp, y_temp, x_test, y_test)
 
     # *************** 2. Mean ************
-    print (f'2. Mean prediction')
     error_mean = np.mean((y_test - np.mean(y_temp)) ** 2)
     results['mean'][rep, index] = error_mean
 
     # ************* 3. Estimated S_hat ***********
-    print (f'3. Subset search')
 
     if p<10:
       s_hat = subset_search.subset(x_temp, y_temp, n_ex[0:t], 
@@ -134,7 +128,6 @@ for rep in range(n_repeat):
       
 
     # ************** 4. Estimated greedy S ******************
-    print(f'4. Greedy subset search')
     s_greedy = subset_search.greedy_subset(x_temp, y_temp, n_ex[0:t], 
                                            delta=alpha_test, 
                                            valid_split=0.8, 
@@ -152,7 +145,6 @@ for rep in range(n_repeat):
 
 
     # ************ 5. True S **************
-    print(f'5. True causal predictor')
     lr_true_temp = linear_model.LinearRegression()
     lr_true_temp.fit(x_temp[:,true_s], y_temp)
     results['strue'][rep, index] = mse(lr_true_temp,x_test[:,true_s], y_test)
@@ -161,7 +153,6 @@ for rep in range(n_repeat):
     gc.collect()
 
     # ************ 6. mSDA *************
-    print(f'6. mSDA')
     p_linsp = np.linspace(0,1,10)
     # p_linsp = np.linspace(0.001, 0.999, 10)
     p_cv = mSDA_cv(p_linsp, x_temp, y_temp, n_cv = t)
@@ -180,7 +171,6 @@ for rep in range(n_repeat):
   del x_train, y_train, x_test, y_test
 #   gc.collect()
 #   end = get_memory_usage_gb()
-#   print(f"RAM Used: {end - start:.2f} GB")  
                  
 
 save_all = {}

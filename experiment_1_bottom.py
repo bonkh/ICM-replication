@@ -93,7 +93,6 @@ for m in methods:
   results[m]  = np.zeros((n_repeat, n_train_tasks.size))
 
 for rep in range(n_repeat):
-  print(rep)
   x_train, y_train = dataset.resample(n_task, n)
 
   x_test = dataset.test['x_test']
