@@ -4,7 +4,8 @@ import argparse
 import subset_search
 import  pickle
 import os
-from data import *
+# from data import *
+from rewrited_data import *
 from utils import *
 from msda import *
 from dica import *
@@ -24,7 +25,7 @@ parser.add_argument('--eps', default = 2)
 parser.add_argument('--g', default = 1)
 parser.add_argument('--lambd', default = 0.5)
 parser.add_argument('--lambd_test', default = 0.99)
-parser.add_argument('--use_hsic', default = 1)
+parser.add_argument('--use_hsic', default = 0)
 parser.add_argument('--alpha_test', default = 0.05)
 parser.add_argument('--n_repeat', default = 100)
 parser.add_argument('--max_l', default = 1000)
@@ -127,7 +128,7 @@ for rep in range(n_repeat):
         lasso_locs = np.where(lasso_mask == True)[0]
         x_train_subset_search = x_train[:,lasso_mask]
         x_test_subset_search = x_test[:,lasso_mask]
-        print(f'X train subset: {x_train_subset_search.shape}')
+
 
         p = x_train_subset_search.shape[1]
 
@@ -135,6 +136,7 @@ for rep in range(n_repeat):
         if p<12:
             
             x_temp_subset_search = x_train_subset_search[0:np.cumsum(n_ex)[t], :]
+            print(f'X temp subset: {x_temp_subset_search.shape}')
         
             s_hat = subset_search.subset(x_temp_subset_search, y_temp, n_ex[0:t], delta=alpha_test, 
                                     valid_split=0.6, use_hsic=use_hsic)
@@ -181,6 +183,7 @@ for rep in range(n_repeat):
 
         p_linsp = np.linspace(0,1,10)
         p_cv = mSDA_cv(p_linsp, x_temp, y_temp, n_cv = t)
+        print(p_cv)
         fit_sda = mSDA(x_temp.T,p_cv,1)
         x_sda = fit_sda[-1][-1].T
         w_sda = fit_sda[0]
