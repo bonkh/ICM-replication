@@ -1,6 +1,3 @@
-# Specify Python version (informational only for pip)
-python_version >= 3.12
-
 numpy
 pandas
 scikit-learn
