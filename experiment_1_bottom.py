@@ -128,7 +128,7 @@ for rep in range(n_repeat):
 
         # True S
         lr_true_temp = linear_model.LinearRegression()
-        lr_true_temp.fit(x_temp[:, true_s], y_temp)
+        lr_true_temp.fit(x_temp[:, true_s], y_temp)  
         results["strue"][rep, index] = utils.mse(
             lr_true_temp, x_test[:, true_s], y_test
         )
