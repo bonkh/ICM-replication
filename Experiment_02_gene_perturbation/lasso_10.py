@@ -6,8 +6,9 @@ from sklearn.preprocessing import StandardScaler
 
 int_data = pd.read_csv("data/interventional_data.csv", index_col=0)
 obs_data = pd.read_csv("data/observational_data.csv", index_col=0)
-int_pos_data = pd.read_csv('data/interventional_position_data.csv', index_col=0)
+int_pos_data = pd.read_csv("data/interventional_position_data.csv", index_col=0)
 gene_names = list(obs_data.columns)
+
 
 def get_task_data_and_top10(i, obs_data, int_data, gene_names):
     """
@@ -30,21 +31,22 @@ def get_task_data_and_top10(i, obs_data, int_data, gene_names):
 
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
-    
+
     print(f"Target std: {np.std(y):.4f}")
     print(f"Any NaNs in X: {np.isnan(X_scaled).any()}")
     print(f"Any NaNs in y: {np.isnan(y).any()}")
 
     # === Fit LassoCV để chọn top 10 predictors ===
-    lasso = LassoCV(cv=5, random_state=42, max_iter=10000, alphas=np.logspace(-2, 2, 100)).fit(X_scaled, y)
+    lasso = LassoCV(
+        cv=5, random_state=42, max_iter=10000, alphas=np.logspace(-2, 2, 100)
+    ).fit(X_scaled, y)
 
     # Choose top 10 features
     coef_series = pd.Series(np.abs(lasso.coef_), index=predictor_genes)
     top10_genes = coef_series.sort_values(ascending=False).head(10).index.tolist()
 
-    return {
-        "target_gene": target_gene,
-        "top10_genes": top10_genes}
+    return {"target_gene": target_gene, "top10_genes": top10_genes}
+
 
 top10_predictors_dict = {}
 

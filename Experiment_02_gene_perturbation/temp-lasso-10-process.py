@@ -13,7 +13,7 @@ import ast
 
 # print(id[1])
 # print(target_gene[1])
-# print(top10_predictors[1])  
+# print(top10_predictors[1])
 # print(len(id))
 
 # lasso_res = pd.DataFrame({
@@ -58,5 +58,5 @@ import ast
 
 # df.to_csv('data/lasso_10.csv')
 
-df = pd.read_csv('data/lasso_10.csv', index_col=0)
-df.to_csv('data/lasso_10.csv', index=False)
+df = pd.read_csv("data/lasso_10.csv", index_col=0)
+df.to_csv("data/lasso_10.csv", index=False)

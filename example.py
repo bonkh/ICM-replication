@@ -5,6 +5,7 @@ from sklearn.linear_model import LinearRegression
 
 
 from sklearn.metrics.pairwise import rbf_kernel
+
 # from dica import *
 # from dica_gpu import *
 
@@ -14,9 +15,9 @@ from sklearn.metrics import mean_squared_error
 
 np.random.seed(2025)
 
-n_samples_per_task = 4000 # (n_examples_task)
+n_samples_per_task = 4000  # (n_examples_task)
 n_tasks = 3
-n_test_tasks = 10 #n_test_tasks = 100
+n_test_tasks = 10  # n_test_tasks = 100
 n_predictors = 3
 n_ex = []
 
@@ -81,21 +82,19 @@ delta = 0.05
 
 import scipy.io
 
-data = scipy.io.loadmat('dataset.mat')
+data = scipy.io.loadmat("dataset.mat")
 
-train_x = data['train_x']
-train_y = data['train_y']
-test_x = data['test_x']
-test_y = data['test_y']
-n_ex = data['n_ex'].flatten()  # Flatten về vector 1D nếu cần
+train_x = data["train_x"]
+train_y = data["train_y"]
+test_x = data["test_x"]
+test_y = data["test_y"]
+n_ex = data["n_ex"].flatten()  # Flatten về vector 1D nếu cần
 
 print(train_x.shape)
 print(train_y.shape)
 print(test_x.shape)
 print(test_y.shape)
 print(n_ex)
-
-
 
 
 domain_idx = []
@@ -115,7 +114,7 @@ gamma_y = 1.0
 Kx = rbf_kernel(train_x, train_x, gamma=gamma_x)
 Ky = rbf_kernel(train_y, train_y, gamma=gamma_y)
 Kt = rbf_kernel(test_x, train_x, gamma=gamma_x)
-print(f'KT shape:   {Kt.shape}')
+print(f"KT shape:   {Kt.shape}")
 
 N = train_x.shape[0]
 unique_domains = np.unique(domain_idx)
@@ -126,7 +125,6 @@ for d in unique_domains:
     nd = len(idx)
     Q[np.ix_(idx, idx)] += 1.0 / nd
 Q /= len(unique_domains)
-
 
 
 lambda_ = 1e-3
@@ -162,14 +160,13 @@ print(f"Raw feature MSE: {mse_raw:.4f}")
 # ----------- 2. Causal subset features using s_hat -------------
 
 start_time = time.time()
-s_hat = subset(train_x, train_y, n_ex, valid_split=0.5, 
-                             delta=0.05, use_hsic=use_hsic)
+s_hat = subset(train_x, train_y, n_ex, valid_split=0.5, delta=0.05, use_hsic=use_hsic)
 
 end_time = time.time()
 print(f"Execution time: {end_time - start_time:.4f} seconds")
-print(f'S_HAT{s_hat}')
+print(f"S_HAT{s_hat}")
 
-                             
+
 train_x_s = train_x[:, s_hat]
 test_x_s = test_x[:, s_hat]
 
@@ -183,12 +180,13 @@ print(f"Causal subset (s_hat) MSE: {mse_subset:.4f}")
 # #-------------Greedy subset---------------
 print("Greedy subset search")
 start_time = time.time()
-s_hat_greedy = greedy_subset(train_x, train_y, n_ex, valid_split=0.5, 
-                             delta=0.05, use_hsic=use_hsic)
+s_hat_greedy = greedy_subset(
+    train_x, train_y, n_ex, valid_split=0.5, delta=0.05, use_hsic=use_hsic
+)
 end_time = time.time()
 print(f"Execution time: {end_time - start_time:.4f} seconds")
 
-print(f'Greedy subset: {s_hat_greedy}')
+print(f"Greedy subset: {s_hat_greedy}")
 
 train_x_greedy_s = train_x[:, s_hat_greedy]
 test_x_greedy_s = test_x[:, s_hat_greedy]
@@ -202,8 +200,7 @@ print(f"Causal subset (s_hat) MSE: {mse_subset:.4f}")
 print(f"Greedy subset (s_hat) MSE: {mse_greedy_subset:.4f}")
 
 
-lightGBM_test(train_x, train_y, n_ex, valid_split=0.5, 
-                             delta=0.05, use_hsic=use_hsic)
+lightGBM_test(train_x, train_y, n_ex, valid_split=0.5, delta=0.05, use_hsic=use_hsic)
 
 
 # ----------- 3. DICA-transformed features -----------------------

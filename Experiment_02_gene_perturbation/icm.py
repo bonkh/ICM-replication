@@ -1,27 +1,59 @@
 import pandas as pd
 import json
 from collections import defaultdict
+
 # import causalicp as icp
 
 int_data = pd.read_csv("data/interventional_data.csv", index_col=0)
 obs_data = pd.read_csv("data/observational_data.csv", index_col=0)
-int_pos_data = pd.read_csv('data/interventional_position_data.csv', index_col=0)
-intervened_genes = set(int_pos_data['Mutant'])
+int_pos_data = pd.read_csv("data/interventional_position_data.csv", index_col=0)
+intervened_genes = set(int_pos_data["Mutant"])
 gene_names = list(obs_data.columns)
 
 genes = [
-    "YMR104C", "YMR103C", "YPL273W", "YMR321C", "YCL040W", "YCL042W",
-    "YLL019C", "YLL020C", "YMR186W", "YPL240C", "YDR074W", "YBR126C",
-    "YMR173W", "YMR173W-A", "YGR162W", "YGR264C", "YOR027W", "YJL077C",
-    "YJL115W", "YLR170C", "YOR153W", "YDR011W", "YLR270W", "YLR345W",
-    "YOR153W", "YBL005W", "YJL141C", "YNR007C", "YAL059W", "YPL211W",
-    "YLR263W", "YKL098W", "YGR271C-A", "YDR339C", "YLL019C", "YGR130C",
-    "YCL040W", "YML100W", "YMR310C", "YOR224C"
+    "YMR104C",
+    "YMR103C",
+    "YPL273W",
+    "YMR321C",
+    "YCL040W",
+    "YCL042W",
+    "YLL019C",
+    "YLL020C",
+    "YMR186W",
+    "YPL240C",
+    "YDR074W",
+    "YBR126C",
+    "YMR173W",
+    "YMR173W-A",
+    "YGR162W",
+    "YGR264C",
+    "YOR027W",
+    "YJL077C",
+    "YJL115W",
+    "YLR170C",
+    "YOR153W",
+    "YDR011W",
+    "YLR270W",
+    "YLR345W",
+    "YOR153W",
+    "YBL005W",
+    "YJL141C",
+    "YNR007C",
+    "YAL059W",
+    "YPL211W",
+    "YLR263W",
+    "YKL098W",
+    "YGR271C-A",
+    "YDR339C",
+    "YLL019C",
+    "YGR130C",
+    "YCL040W",
+    "YML100W",
+    "YMR310C",
+    "YOR224C",
 ]
 
 print(len(set(intervened_genes).intersection(set(genes))))
-
-
 
 
 def find_SIE_candidates(target_gene, int_data, int_pos_data, all_genes):
@@ -75,8 +107,6 @@ for i, gene in enumerate(all_genes):
 # === Save to JSON ===
 with open("sie_results.json", "w") as f:
     json.dump(sie_results, f, indent=2)
-
-
 
 
 def find_icp_causal_candidates_subset(

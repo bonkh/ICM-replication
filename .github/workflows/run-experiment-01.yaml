@@ -25,6 +25,7 @@ jobs:
 
       - name: Run Python script
         run: |
+          python experiment_1_top_right.py
           python experiment_1_bottom.py
       
       - name: Commit and push file
