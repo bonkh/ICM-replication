@@ -126,6 +126,8 @@ for rep in range(n_repeat):
       s_hat = subset_search.subset(x_temp, y_temp, n_ex[0:t], 
                                    delta=alpha_test, valid_split=0.6, 
                                    use_hsic=use_hsic)
+      
+      print(s_hat)
     
   
     if p<10:
@@ -187,6 +189,7 @@ for rep in range(n_repeat):
                                            delta=alpha_test, 
                                            valid_split=0.8, 
                                            use_hsic=use_hsic)
+    print(s_greedy)
 
     if s_greedy.size> 0:
       lr_sg_temp = linear_model.LinearRegression()
