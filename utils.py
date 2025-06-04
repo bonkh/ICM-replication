@@ -33,7 +33,8 @@ def get_color_dict():
     'mean' : 'black',
     'msda' : 'orange',
     'mtl' : 'orange',
-    'dica' : 'orange',
+    # 'dica' : 'orange',
+    'cicm' : 'orange',
     'dom' : 'k',
     'naive' : 'magenta'
   }
@@ -51,7 +52,8 @@ def get_color_dict():
     'mean' : 'o',
     'msda' : 'o',
     'mtl' : '^',
-    'dica' : 'd',
+    # 'dica' : 'd',
+    'cicm' : 'd',
     'dom' : 'o',
     'naive' : 'o'
   }
@@ -71,7 +73,8 @@ def get_color_dict():
               'mtl'   : r'$\beta^{MTL}$',
               'dica'   : r'$\beta^{DICA}$',
               'naive'   : r'$\beta^{naive}$',
-              'dom'   : r'$\beta^{dom}$'
+              'dom'   : r'$\beta^{dom}$',
+              'cicm'   : r'$\beta^{cICM}$',
             }
 
   return colors, markers, legends
