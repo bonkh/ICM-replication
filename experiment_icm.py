@@ -169,7 +169,7 @@ for rep in range(n_repeat):
     print(result.estimate)
 
     
-    if len(result.estimate)> 0:
+    if result.estimate is not None and len(result.estimate) > 0:
       
       selected_features = list(result.estimate)
       # selected_features = [0,1,2]
