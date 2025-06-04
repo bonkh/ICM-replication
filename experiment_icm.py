@@ -142,45 +142,45 @@ for rep in range(n_repeat):
       else:
         results['shat'][rep,index] = error_mean
 
-    # ************ 3. cICM ***********
-    # print(f'4. cICM')
-    # envs = []
-    # start = 0
-    # for n in n_ex[0:t]:
-    #     end = start + n
-    #     env_data = np.column_stack([x_temp[start:end], y_temp[start:end]])  # Combine X and y
-    #     print(env_data.shape)
-    #     envs.append(env_data)
-    #     start = end
+    ************ 3. cICM ***********
+    print(f'4. cICM')
+    envs = []
+    start = 0
+    for n in n_ex[0:t]:
+        end = start + n
+        env_data = np.column_stack([x_temp[start:end], y_temp[start:end]])  # Combine X and y
+        print(env_data.shape)
+        envs.append(env_data)
+        start = end
 
-    # data_list = envs
-    # target_index = x_temp.shape[1]
-    # print(target_index)
+    data_list = envs
+    target_index = x_temp.shape[1]
+    print(target_index)
 
-    # alpha = 0.05  # Set your significance level
-    # verbose = False
+    alpha = 0.05  # Set your significance level
+    verbose = False
 
-    # try:
-    #     result = fit(data_list, target=target_index, alpha=alpha, verbose=verbose)
-    #     print("ICP result:", result.accepted_sets)
-    # except Exception as e:
-    #     if verbose:
-    #         print(f"ICP failed: {e}")
-    # print(result.estimate)
+    try:
+        result = fit(data_list, target=target_index, alpha=alpha, verbose=verbose)
+        print("ICP result:", result.accepted_sets)
+    except Exception as e:
+        if verbose:
+            print(f"ICP failed: {e}")
+    print(result.estimate)
 
     
-    # if len(result.estimate)> 0:
+    if len(result.estimate)> 0:
       
-    #   selected_features = list(result.estimate)
-    #   # selected_features = [0,1,2]
-    #   lr_cicm_temp = linear_model.LinearRegression()
-    #   lr_cicm_temp.fit(x_temp[:,selected_features], y_temp)
-    #   results['cicm'][rep, index] = mse(lr_cicm_temp, x_test[:,selected_features], y_test)
+      selected_features = list(result.estimate)
+      # selected_features = [0,1,2]
+      lr_cicm_temp = linear_model.LinearRegression()
+      lr_cicm_temp.fit(x_temp[:,selected_features], y_temp)
+      results['cicm'][rep, index] = mse(lr_cicm_temp, x_test[:,selected_features], y_test)
 
-    #   del lr_cicm_temp
-    #   gc.collect()
-    # else:
-    #   results['cicm'][rep, index] = error_mean
+      del lr_cicm_temp
+      gc.collect()
+    else:
+      results['cicm'][rep, index] = error_mean
 
 
     # ************** 4. Estimated greedy S ******************
