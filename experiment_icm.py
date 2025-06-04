@@ -142,7 +142,7 @@ for rep in range(n_repeat):
       else:
         results['shat'][rep,index] = error_mean
 
-    ************ 3. cICM ***********
+    # ************ 3. cICM ***********
     print(f'4. cICM')
     envs = []
     start = 0
