@@ -702,3 +702,10 @@ def lasso_alpha_search_synt(X,Y):
     index_mask = np.where(mask == True)[0]
 
     return mask
+
+
+def intervene_on_p(l_p, sz):
+  mask = np.zeros((sz, 1), dtype = bool)
+  if len(l_p) > 0:
+    mask[l_p] = True
+  return mask
