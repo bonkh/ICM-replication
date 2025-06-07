@@ -221,8 +221,23 @@ def regress(y, S, mean, cov):
     # Compute the regression coefficients from the
     # weighted empirical covariance (scatter) matrix i.e. b =
     # Σ_{y,S} @ Σ_{S,S}^-1
+    # if len(S) > 0:
+    #     coefs[S] = np.linalg.solve(cov[S, :][:, S], cov[y, S])
     if len(S) > 0:
-        coefs[S] = np.linalg.solve(cov[S, :][:, S], cov[y, S])
+        A = cov[S, :][:, S]     # Covariance matrix for selected variables
+        b = cov[y, S]           # Covariance between target and selected variables
+
+        try:
+            # Check condition number for stability
+            if np.linalg.cond(A) < 1e12:
+                coefs[S] = np.linalg.solve(A, b)
+            else:
+                # print("⚠️ Warning: matrix ill-conditioned, using pseudo-inverse")
+                coefs[S] = np.dot(np.linalg.pinv(A), b)
+        except np.linalg.LinAlgError as e:
+            # print(f"⚠️ LinAlgError occurred: {e}, using pseudo-inverse fallback")
+            coefs[S] = np.dot(np.linalg.pinv(A), b)
+
     intercept = mean[y] - coefs @ mean
     return coefs, intercept
 
@@ -578,10 +593,10 @@ def _confidence_intervals(y, coefs, S, residuals, alpha, data):
     # 1.1. Estimate residual variance
     residuals = np.hstack(residuals)
     sigma = residuals @ residuals / (data.N - len(S) - 1)
-    # 1.2. Estimate std. errors of the coefficients
+    # 1.2. Estimate std. errors of the coefficients.
     sup = S + [data.p]  # Must include intercept in the computation
     correlation = data.pooled_correlation[:, sup][sup, :]
-    corr_term = np.diag(np.linalg.inv(correlation))
+    corr_term = np.diag(np.linalg.pinv(correlation))
     std_errors = np.sqrt(sigma * corr_term)[:-1]
     # 2. Quantile term
     quantile = scipy.stats.norm.ppf(1 - alpha / 4)
