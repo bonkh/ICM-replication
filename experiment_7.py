@@ -10,9 +10,13 @@ from dica import *
 from icp import *
 from plotting import *
 import traceback
+import pandas as pd
+
 
 import pickle
 import os
+from scipy.io import savemat
+
 
 np.random.seed(1234)
 
@@ -61,7 +65,7 @@ n_repeat = int(args.n_repeat)
 true_s = np.arange(p_s)
 
 results = {}
-methods = ["pool", "shat", "sgreed", "strue", "mean", "msda"]
+methods = ["mean", "shat","cicm"]
 
 color_dict, markers, legends = utils.get_color_dict()
 
@@ -73,20 +77,26 @@ save_all["results"] = results
 save_all["plotting"] = [methods, color_dict, legends, markers]
 save_all["n_train_tasks"] = n_train_tasks
 
-file_name = ["tl", str(n_repeat), str(eps), str(g), str(lambd)]
-file_name = "_".join(file_name)
 
-
-dif_inter = [[], [0], [0, 1], [0, 1, 2]]
+dif_inter = [[0,1,2]]
+            #  [0, 1], [0, 1, 2]]
 
 # count = np.zeros((len(dif_inter), p))
 count_subset = np.zeros((len(dif_inter), p))  # For subset search
 count_icp = np.zeros((len(dif_inter), p))  
 
+results = {}
+for m in methods:
+  results[m]  = np.zeros((n_repeat, len(dif_inter)))
+
+
+
 for ind_l, l_d in enumerate(dif_inter):
+
     print(f"Intervened index: {l_d}")
     for rep in range(n_repeat):
         print(f"Repeat: {rep}")
+
 
         where_to_intervene = l_d
         mask = intervene_on_p(where_to_intervene, p - p_s)
@@ -95,20 +105,44 @@ for ind_l, l_d in enumerate(dif_inter):
         x_train = dataset.train["x_train"]
         y_train = dataset.train["y_train"]
         n_ex = dataset.n_ex
+
+
+        x_test = dataset.test['x_test']
+        y_test = dataset.test['y_test']
+
+
+
+        pd.DataFrame(x_train).to_csv("Experiment_7/Intervened_X3_X4_X5/x_train.csv", index=False)
+        pd.DataFrame(y_train).to_csv("Experiment_7/Intervened_X3_X4_X5/y_train.csv", index=False)
+        pd.DataFrame(x_test).to_csv("Experiment_7/Intervened_X3_X4_X5/x_test.csv", index=False)
+        pd.DataFrame(y_test).to_csv("Experiment_7/Intervened_X3_X4_X5/y_test.csv", index=False)
+
+        raise
+
+
+        print (f'------------ 0. Mean prediction -----------------')
+        error_mean = np.mean((y_test - np.mean(y_train)) ** 2)
+        results['mean'][rep, ind_l] = error_mean
+
+        print('----------- 1. Subset search - ICM ------------- ')
+
         s_hat = subset_search.subset(
             x_train, y_train, n_ex, valid_split=0.6, delta=alpha_test, use_hsic=use_hsic
         )
 
-        # for pred in range(p):
-        #     if pred in s_hat:
-        #         count[ind_l, pred] += 1
+
         for pred in range(p):
             if pred in s_hat:
                 count_subset[ind_l, pred] += 1
 
-        print(f'X train_shape: {x_train.shape}')
-        print(f'y_train_shape: {y_train.shape}')
+        if s_hat.size> 0:
+            lr_subset_search = linear_model.LinearRegression()
+            lr_subset_search.fit(x_train[:,s_hat], y_train)
+            results['shat'][rep, ind_l] = mse(lr_subset_search, x_test[:,s_hat], y_test)
+        else: 
+            results['shat'][rep, ind_l] = error_mean
 
+        print('------------ 2. cICM ----------------')
         envs = []
         start = 0
         for n in n_ex:
@@ -133,12 +167,29 @@ for ind_l, l_d in enumerate(dif_inter):
             print('haha')
 
             accepted_features = list(result.estimate)
-            for pred in accepted_features:
-                count_icp[ind_l, pred] += 1
+
+            for pred in range(p):
+                if pred in accepted_features:
+                    count_icp[ind_l, pred] += 1
+
+            
         except Exception as e:
             print("ICP failed:")
             traceback.print_exc()
-                
+
+        if result.estimate is not None and len(result.estimate) > 0:
+
+            selected_features = list(result.estimate)
+
+            lr_cicm = linear_model.LinearRegression()
+            lr_cicm.fit(x_train[:,selected_features], y_train)
+            results['cicm'][rep, ind_l] = mse(lr_cicm, x_test[:,selected_features], y_test)
+
+            del lr_cicm
+            gc.collect()
+        else:
+            results['cicm'][rep, ind_l] = error_mean
+                        
 
 
 print(count_icp)
@@ -154,8 +205,29 @@ save_all = {
     "inter": dif_inter,
 }
 
+file_name = ["tl", str(n_repeat), str(eps), str(g), str(lambd)]
+file_name = "_".join(file_name)
+
+
 with open(os.path.join(save_dir, file_name + ".pkl"), "wb") as f:
     pickle.dump(save_all, f)
 
 # Create plot
-plot_interv(os.path.join(save_dir, file_name + ".pkl"),  'plot_ICM_cICM_1.pdf')
+plot_interv(os.path.join(save_dir, file_name + ".pkl"))
+
+
+
+save_all = {
+    "results" : results,
+    "plotting": [methods, color_dict, legends, markers],
+    "n_repeat": n_repeat,
+    "inter": dif_inter,
+}
+
+
+#Save pickle file
+file_name = ['mse_', str(n_repeat), str(eps), str(g), str(lambd)]
+file_name = '_'.join(file_name)
+
+with open(os.path.join(save_dir, file_name+'.pkl'),'wb') as f:
+  pickle.dump(save_all, f)

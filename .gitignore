@@ -9,7 +9,10 @@ __pycache__/
 *.dat
 *.pkl
 *.pdf
+*.csv
 Experiment2/*.csv
 Experiment2/*.json
 Experiment2/*.zip
 Experiment2/*.txt
+
+Experiment_7/*.csv
