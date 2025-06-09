@@ -78,7 +78,7 @@ save_all["plotting"] = [methods, color_dict, legends, markers]
 save_all["n_train_tasks"] = n_train_tasks
 
 
-dif_inter = [[0,1,2]]
+dif_inter = [[]]
             #  [0, 1], [0, 1, 2]]
 
 # count = np.zeros((len(dif_inter), p))
@@ -94,6 +94,11 @@ for m in methods:
 for ind_l, l_d in enumerate(dif_inter):
 
     print(f"Intervened index: {l_d}")
+
+    intervened_name = "none" if not l_d else "_".join([f"X{i+1}" for i in l_d])
+    save_dir = f"Experiment_7/intervened_{intervened_name}"
+    os.makedirs(save_dir, exist_ok=True)
+
     for rep in range(n_repeat):
         print(f"Repeat: {rep}")
 
@@ -110,14 +115,17 @@ for ind_l, l_d in enumerate(dif_inter):
         x_test = dataset.test['x_test']
         y_test = dataset.test['y_test']
 
+        pd.DataFrame(x_train).to_csv(f"{save_dir}/x_train_{rep}.csv", index=False)
+        pd.DataFrame(y_train).to_csv(f"{save_dir}/y_train_{rep}.csv", index=False)
+        pd.DataFrame(x_test).to_csv(f"{save_dir}/x_test_{rep}.csv", index=False)
+        pd.DataFrame(y_test).to_csv(f"{save_dir}/y_test_{rep}.csv", index=False)
 
 
-        pd.DataFrame(x_train).to_csv("Experiment_7/Intervened_X3_X4_X5/x_train.csv", index=False)
-        pd.DataFrame(y_train).to_csv("Experiment_7/Intervened_X3_X4_X5/y_train.csv", index=False)
-        pd.DataFrame(x_test).to_csv("Experiment_7/Intervened_X3_X4_X5/x_test.csv", index=False)
-        pd.DataFrame(y_test).to_csv("Experiment_7/Intervened_X3_X4_X5/y_test.csv", index=False)
 
-        raise
+        # pd.DataFrame(x_train).to_csv("Experiment_7/Intervened_X3_X4_X5/x_train.csv", index=False)
+        # pd.DataFrame(y_train).to_csv("Experiment_7/Intervened_X3_X4_X5/y_train.csv", index=False)
+        # pd.DataFrame(x_test).to_csv("Experiment_7/Intervened_X3_X4_X5/x_test.csv", index=False)
+        # pd.DataFrame(y_test).to_csv("Experiment_7/Intervened_X3_X4_X5/y_test.csv", index=False)
 
 
         print (f'------------ 0. Mean prediction -----------------')
