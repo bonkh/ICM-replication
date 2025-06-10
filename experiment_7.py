@@ -206,6 +206,7 @@ print(count_icp)
 # save_all = {"count": count, "n_repeat": n_repeat, "inter": dif_inter}
 # with open(os.path.join(save_dir, file_name + ".pkl"), "wb") as f:
 #     pickle.dump(save_all, f)
+
 save_all = {
     "count_subset": count_subset,
     "count_icp": count_icp,
@@ -220,8 +221,8 @@ file_name = "_".join(file_name)
 with open(os.path.join(save_dir, file_name + ".pkl"), "wb") as f:
     pickle.dump(save_all, f)
 
-# Create plot
-plot_interv(os.path.join(save_dir, file_name + ".pkl"))
+# # Create plot
+# plot_interv(os.path.join(save_dir, file_name + ".pkl"))
 
 
 
@@ -231,9 +232,6 @@ save_all = {
     "n_repeat": n_repeat,
     "inter": dif_inter,
 }
-
-
-#Save pickle file
 file_name = ['mse_', str(n_repeat), str(eps), str(g), str(lambd)]
 file_name = '_'.join(file_name)
 
