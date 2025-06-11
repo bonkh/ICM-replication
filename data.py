@@ -125,10 +125,14 @@ def draw_tasks(n_task, n, params):
         xs_k = gen_gauss(mu_s, cov_s[k], n)
         eps_draw = gen_noise((n, 1))
         y_k = np.dot(xs_k, alpha) + eps * eps_draw
+
         gamma_k = gamma[k]
         noise_k = g * gen_gauss(mu_n, cov_n[k], n)
 
-        xn_k = np.dot(y_k, gamma_k.T) + noise_k
+        xn_k = noise_k
+        # + noise_k
+        # noise_k
+        # np.dot(y_k, gamma_k.T) + noise_k
         beta_k = beta[k]
 
         if p_nconf > 0:
@@ -186,8 +190,11 @@ class gauss_tl(object):
         p_n = p - p_s
         p_nconf = p_s - p_conf
         alpha = gen_coef(np.random.normal(0, 1, (p_s, 1)), 0)
+        print(alpha)
 
         gamma_0 = np.random.normal(0, 1, (p_n, 1))
+
+
         beta_0 = np.random.normal(0, 1, (p_conf, p_n))
 
         x, y, x_test, y_test, n_ex, n_ex_test, params = draw_all(

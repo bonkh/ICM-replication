@@ -1,0 +1,130 @@
+[33m8a2f9a8[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m update cim vs cicm
+[33m3758f69[m[33m ([m[1;31morigin/main[m[33m)[m update icm vs cicm
+[33me8127db[m update icm vs cicm
+[33mc7c3d0c[m update icm
+[33m95c0015[m add ICM vs cICM
+[33m3fb0c8c[m update experiment 7
+[33m9479589[m update icm_experiment
+[33m642c016[m fix icm_experiment
+[33m20077a9[m icm no hsic
+[33m3af6c47[m update icm experiment
+[33m1e7fdc3[m update icm experiment
+[33m86cf85e[m add icm experiment
+[33m3d9374b[m update ẽ 2
+[33m2badbb1[m update rewrite data
+[33m00a5267[m ex 1 top right
+[33m9e1d07c[m experiment 1 top right
+[33mcd6255b[m update experiment 1 top right
+[33mdfc526c[m fix experiment 1 top right
+[33md11a5f0[m fix bug in experiment 2
+[33m5239f24[m update full code experiment 2
+[33mfb4debd[m update experiment 1
+[33ma819134[m update
+[33mf2be61f[m update
+[33mbb3038a[m update ex 2
+[33mf839fce[m update experiment 2
+[33m843bcb1[m update
+[33m7bbd277[m update ex 2
+[33m7608809[m update experiment 2
+[33m3a70064[m update experiment 1
+[33m1d9693a[m update experiment 2
+[33m92d1f98[m update experiment 2
+[33m7036ef5[m initial commit
+[33m9de0657[m update ex 1
+[33m9bd1532[m update in expriment 1
+[33m9da8bc6[m update experiment 1
+[33mf1e424f[m update ex 1 top left
+[33mfb1365b[m fix bug in experiment 1 bottom
+[33m6d5a144[m add experiment 1 top right and bottom
+[33mdc56d16[m fix bugs in experiment 1
+[33m22f1a94[m update experiment 1
+[33m63349bd[m udate
+[33mbe5dd6a[m update
+[33m88bf5ff[m update
+[33mef4d3a2[m update
+[33madb790b[m update
+[33m12ac3d0[m update
+[33mabf8e74[m update
+[33m48c6dd5[m update
+[33ma12d16f[m update
+[33mcc0057f[m update
+[33ma44c52a[m update
+[33m16efa01[m update
+[33m3ca11b4[m update
+[33mab532ca[m update
+[33me7452b9[m update
+[33maa98bca[m update
+[33m6e7ff73[m update
+[33med3b846[m update
+[33m894e50b[m update
+[33meae4bff[m update
+[33m8f3b6d1[m update
+[33m2e31ab0[m update
+[33mcb498c6[m update
+[33m6fc5419[m update
+[33m607a99a[m update
+[33mbd3b205[m update
+[33m3b07e16[m update
+[33me6af498[m update
+[33mec53415[m update
+[33m5da9971[m update
+[33m0265c5b[m update
+[33m1198127[m update dica
+[33me401525[m update dica
+[33m09811f2[m update dica
+[33m2fcb374[m update dica
+[33mdba037f[m update dica
+[33md9cef09[m update dica
+[33me95258a[m update dica
+[33m44838e2[m update dica
+[33m866dd84[m update dica
+[33mdc2549c[m update dica
+[33md540ba2[m update dica
+[33m75286e4[m update dica
+[33m6e2f234[m update dica
+[33me759372[m update dica
+[33ma6c44f5[m update dica
+[33mdda8cc3[m update dica
+[33m0d6f182[m edit dica pytorch
+[33m6034c40[m edit dica pytorch
+[33me9bd3ef[m update experiment 1
+[33m8dfe3f3[m update experiment 1
+[33maa4d781[m update dica with torch
+[33m6c685b3[m update dica with torch
+[33m5ea27f7[m update experiment 1
+[33mbde0146[m update experiment 1
+[33m9926154[m update dica-torch
+[33me60c085[m update dica-torch
+[33m898ed19[m update
+[33m123c081[m update
+[33me379054[m update with blockwise
+[33m4cd815f[m[33m ([m[1;32mmaster[m[33m)[m update experiment 1 with blockwise
+[33md56fa43[m update experiment 1
+[33me552b20[m update experiment 1
+[33m8511c3b[m update experiment 1
+[33ma7b7f91[m update experiment 1
+[33m3d1950b[m update experiment 1
+[33m5069ca5[m update experiment 1
+[33mca505d7[m[33m ([m[1;31morigin/khoi[m[33m)[m Initial clean commit
+[33mc85a3af[m try to enhance the memory usage
+[33m78d74ae[m try to enhance the memory usage
+[33m6d37f1a[m update dica
+[33m996337b[m update dica
+[33m79c36da[m update dica
+[33m378a3c4[m update dica
+[33m225d04b[m update experiment 1
+[33m0ef68ef[m update experiment 1
+[33mf830d7e[m update experiment 1
+[33mbff91ea[m update experiment 1
+[33m4583a6c[m update experiment 1
+[33ma8f29a4[m update experiment 1
+[33m2f2df74[m update kernel function
+[33mbae0b2a[m update kernel function
+[33ma1afc71[m Fix bugs: DomKer and KernelY
+[33mc36549b[m Fix bugs: DomKer and KernelY
+[33m375678c[m Merge branch 'khoi'
+[33maf7e713[m Merge branch 'khoi'
+[33m79ea0e2[m update readme
+[33m8712d7b[m first commit
+[33mde26c97[m Initial commit
+[33mc2bb2e2[m Initial commit

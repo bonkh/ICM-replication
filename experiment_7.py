@@ -11,6 +11,8 @@ from icp import *
 from plotting import *
 import traceback
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 import pickle
@@ -27,7 +29,7 @@ parser.add_argument("--n", default=4000)
 parser.add_argument("--p", default=6)
 parser.add_argument("--p_s", default=3)
 parser.add_argument("--p_conf", default=0)
-parser.add_argument("--eps", default=2)
+parser.add_argument("--eps", default=1)
 parser.add_argument("--g", default=1)
 parser.add_argument("--lambd", default=0.5)
 parser.add_argument("--lambd_test", default=0.99)
@@ -78,7 +80,7 @@ save_all["plotting"] = [methods, color_dict, legends, markers]
 save_all["n_train_tasks"] = n_train_tasks
 
 
-dif_inter = [[]]
+dif_inter = [[], [0],[0,1], [0,1,2] ]
             #  [0, 1], [0, 1, 2]]
 
 # count = np.zeros((len(dif_inter), p))
@@ -102,24 +104,40 @@ for ind_l, l_d in enumerate(dif_inter):
     for rep in range(n_repeat):
         print(f"Repeat: {rep}")
 
-
         where_to_intervene = l_d
         mask = intervene_on_p(where_to_intervene, p - p_s)
 
         dataset = gauss_tl(n_task, n, p, p_s, p_conf, eps, g, lambd, lambd_test, mask)
         x_train = dataset.train["x_train"]
         y_train = dataset.train["y_train"]
-        n_ex = dataset.n_ex
-
-
         x_test = dataset.test['x_test']
         y_test = dataset.test['y_test']
 
-        pd.DataFrame(x_train).to_csv(f"{save_dir}/x_train_{rep}.csv", index=False)
-        pd.DataFrame(y_train).to_csv(f"{save_dir}/y_train_{rep}.csv", index=False)
-        pd.DataFrame(x_test).to_csv(f"{save_dir}/x_test_{rep}.csv", index=False)
-        pd.DataFrame(y_test).to_csv(f"{save_dir}/y_test_{rep}.csv", index=False)
+        n_ex = dataset.n_ex
 
+        df_x = pd.DataFrame(x_train, columns=[f"X{i}" for i in range(x_train.shape[1])])
+        df_y = pd.Series(y_train.ravel(), name="Y")
+
+        # Compute correlations
+        correlations = df_x.corrwith(df_y)
+
+        # Sort by absolute correlation
+        correlations_sorted = correlations.reindex(correlations.abs().sort_values(ascending=False).index)
+        print(correlations_sorted)
+
+        # Plot
+        # plt.figure(figsize=(12, 6))
+        # sns.barplot(x=correlations_sorted.index, y=correlations_sorted.values)
+        # plt.xticks(rotation=90)
+        # plt.title("Pearson Correlation between Features and Y")
+        # plt.ylabel("Correlation")
+        # plt.tight_layout()
+        # plt.show()
+
+        # pd.DataFrame(x_train).to_csv(f"{save_dir}/x_train_{rep}.csv", index=False)
+        # pd.DataFrame(y_train).to_csv(f"{save_dir}/y_train_{rep}.csv", index=False)
+        # pd.DataFrame(x_test).to_csv(f"{save_dir}/x_test_{rep}.csv", index=False)
+        # pd.DataFrame(y_test).to_csv(f"{save_dir}/y_test_{rep}.csv", index=False)
 
 
         # pd.DataFrame(x_train).to_csv("Experiment_7/Intervened_X3_X4_X5/x_train.csv", index=False)
@@ -137,7 +155,7 @@ for ind_l, l_d in enumerate(dif_inter):
         s_hat = subset_search.subset(
             x_train, y_train, n_ex, valid_split=0.6, delta=alpha_test, use_hsic=use_hsic
         )
-
+        print(s_hat)
 
         for pred in range(p):
             if pred in s_hat:
@@ -156,23 +174,21 @@ for ind_l, l_d in enumerate(dif_inter):
         for n in n_ex:
             end = start + n
             env_data = np.column_stack(
-                [x_train[start:end], x_train[start:end]]
+                [x_train[start:end], y_train[start:end]]
             )  # Combine X and y
-            print(env_data.shape)
+
             envs.append(env_data)
             start = end
 
         data_list = envs
         target_index = x_train.shape[1]
-        print(target_index)
-
         alpha = 0.05  # Set your significance level
         verbose = False
 
         try:
-            result = fit(data_list, target=target_index, alpha=alpha, verbose=False)
+            result = fit(data_list, target=target_index, alpha=0.05, verbose=False)
             print("ICP result:", result.estimate)
-            print('haha')
+
 
             accepted_features = list(result.estimate)
 
