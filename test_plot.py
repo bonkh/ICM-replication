@@ -8,9 +8,9 @@ rc("text", usetex=False)
 
 save_dir = "Experiment_7"
  
-with open('Experiment_7/icm_vs_cicm_2_100_1.0_1.0_0.5.pkl', "rb") as f:
+with open('Experiment_7/icm_vs_cicm_100_1.0_1.0_0.5.pkl', "rb") as f:
     data = pickle.load(f)
-print(data['count_icp'])
+print(data)
 
 count_subset = data['count_subset'] / float(data['n_repeat'])
 count_icp = data['count_icp'] / float(data['n_repeat'])
@@ -40,7 +40,7 @@ for ax, count, title in zip(
 
     ax.set_title(title, fontsize=16)
     ax.set_xticks(np.arange(len(inter)))
-    ax.set_xticklabels([r'-', r'$4$', r'$4,5$', r'$4,5,6$'], fontsize=14)
+    ax.set_xticklabels([r'-', r'$4$', r'$4,5$'], fontsize=14)
     ax.set_xlabel('Intervened covariates', fontsize=14)
     ax.grid(axis='y', linestyle='--', alpha=0.4)
 
@@ -53,7 +53,7 @@ ax1.set_yticks(np.arange(0, 1.1, 0.2))
 ax1.set_yticklabels([r"$0$", r"$0.2$", r"$0.4$", r"$0.6$", r"$0.8$", r"$1$"], fontsize=12)
 
 plt.tight_layout()
-plt.savefig(os.path.join(save_dir,'plot_2.pdf'),
+plt.savefig(os.path.join(save_dir,'scen_1_plot.pdf'),
             bbox_inches='tight', format='pdf', dpi=300)
 plt.close()
 
