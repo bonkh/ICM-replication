@@ -8,7 +8,7 @@ rc("text", usetex=False)
 
 save_dir = "Experiment_7"
  
-with open('Experiment_7/tl_100_1.0_1.0_0.5.pkl', "rb") as f:
+with open('Experiment_7/icm_vs_cicm_2_100_1.0_1.0_0.5.pkl', "rb") as f:
     data = pickle.load(f)
 print(data['count_icp'])
 
@@ -53,7 +53,7 @@ ax1.set_yticks(np.arange(0, 1.1, 0.2))
 ax1.set_yticklabels([r"$0$", r"$0.2$", r"$0.4$", r"$0.6$", r"$0.8$", r"$1$"], fontsize=12)
 
 plt.tight_layout()
-plt.savefig(os.path.join(save_dir,'plot.pdf'),
+plt.savefig(os.path.join(save_dir,'plot_2.pdf'),
             bbox_inches='tight', format='pdf', dpi=300)
 plt.close()
 

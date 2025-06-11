@@ -243,10 +243,6 @@ file_name = "_".join(file_name)
 with open(os.path.join(save_dir, file_name + ".pkl"), "wb") as f:
     pickle.dump(save_all, f)
 
-# # Create plot
-plot_interv(os.path.join(save_dir, file_name + ".pkl"))
-
-
 
 save_all = {
     "results" : results,
