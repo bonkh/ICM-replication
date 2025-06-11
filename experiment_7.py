@@ -97,9 +97,9 @@ for ind_l, l_d in enumerate(dif_inter):
 
     print(f"Intervened index: {l_d}")
 
-    intervened_name = "none" if not l_d else "_".join([f"X{i+1}" for i in l_d])
-    save_dir = f"Experiment_7/intervened_{intervened_name}"
-    os.makedirs(save_dir, exist_ok=True)
+    # intervened_name = "none" if not l_d else "_".join([f"X{i+1}" for i in l_d])
+    # save_dir = f"Experiment_7/intervened_{intervened_name}"
+    # os.makedirs(save_dir, exist_ok=True)
 
     for rep in range(n_repeat):
         print(f"Repeat: {rep}")
