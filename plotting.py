@@ -520,6 +520,8 @@ def plot_interv(file_name):
 
     save_dir = "/".join(file_name.split("/")[:-1])
 
+    print(file_name)
+
     with open(file_name, "rb") as f:
         data = pickle.load(f)
 

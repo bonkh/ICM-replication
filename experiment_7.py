@@ -35,7 +35,7 @@ parser.add_argument("--lambd", default=0.5)
 parser.add_argument("--lambd_test", default=0.99)
 parser.add_argument("--use_hsic", default=0)
 parser.add_argument("--alpha_test", default=0.05)
-parser.add_argument("--n_repeat", default=100)
+parser.add_argument("--n_repeat", default=5)
 parser.add_argument("--max_l", default=100)
 parser.add_argument("--n_ul", default=100)
 args = parser.parse_args()
@@ -80,7 +80,7 @@ save_all["plotting"] = [methods, color_dict, legends, markers]
 save_all["n_train_tasks"] = n_train_tasks
 
 
-dif_inter = [[], [0],[0,1], [0,1,2] ]
+dif_inter = [[], [0],[0,1]]
             #  [0, 1], [0, 1, 2]]
 
 # count = np.zeros((len(dif_inter), p))
@@ -110,8 +110,14 @@ for ind_l, l_d in enumerate(dif_inter):
         dataset = gauss_tl(n_task, n, p, p_s, p_conf, eps, g, lambd, lambd_test, mask)
         x_train = dataset.train["x_train"]
         y_train = dataset.train["y_train"]
-        x_test = dataset.test['x_test']
-        y_test = dataset.test['y_test']
+
+        where_to_intervene_test = [0,1,2]
+        mask_test = intervene_on_p(where_to_intervene_test, p - p_s)
+        dataset_test = gauss_tl(n_task, n, p, p_s, p_conf, eps, g, lambd, lambd_test, mask)
+
+
+        x_test = dataset_test.test['x_test']
+        y_test = dataset_test.test['y_test']
 
         n_ex = dataset.n_ex
 
@@ -230,7 +236,7 @@ save_all = {
     "inter": dif_inter,
 }
 
-file_name = ["tl", str(n_repeat), str(eps), str(g), str(lambd)]
+file_name = ["icm_vs_cicm_2", str(n_repeat), str(eps), str(g), str(lambd)]
 file_name = "_".join(file_name)
 
 
@@ -238,7 +244,7 @@ with open(os.path.join(save_dir, file_name + ".pkl"), "wb") as f:
     pickle.dump(save_all, f)
 
 # # Create plot
-# plot_interv(os.path.join(save_dir, file_name + ".pkl"))
+plot_interv(os.path.join(save_dir, file_name + ".pkl"))
 
 
 
@@ -248,7 +254,7 @@ save_all = {
     "n_repeat": n_repeat,
     "inter": dif_inter,
 }
-file_name = ['mse_', str(n_repeat), str(eps), str(g), str(lambd)]
+file_name = ['mse_2_', str(n_repeat), str(eps), str(g), str(lambd)]
 file_name = '_'.join(file_name)
 
 with open(os.path.join(save_dir, file_name+'.pkl'),'wb') as f:
