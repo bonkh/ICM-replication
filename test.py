@@ -8,7 +8,7 @@ rc("text", usetex=False)
 
 save_dir = "Experiment_7"
  
-with open('Experiment_7/mse__100_1.0_1.0_0.5.pkl', "rb") as f:
+with open('Experiment_7/mse_2__100_1.0_1.0_0.5.pkl', "rb") as f:
     data = pickle.load(f)
 
 # print(data["results"]['shat'])
@@ -40,6 +40,6 @@ plt.xticks(x, scenarios)
 plt.legend()
 plt.tight_layout()
 
-plt.savefig(os.path.join(save_dir,'mse_plot.pdf'),
+plt.savefig(os.path.join(save_dir,'mse_plot_2.pdf'),
             bbox_inches='tight', format='pdf', dpi=300)
 plt.close()

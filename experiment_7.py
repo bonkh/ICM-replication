@@ -129,33 +129,9 @@ for ind_l, l_d in enumerate(dif_inter):
 
         # Compute correlations
         correlations = df_x.corrwith(df_y)
-
-        # Sort by absolute correlation
         correlations_sorted = correlations.reindex(correlations.abs().sort_values(ascending=False).index)
         print(correlations_sorted)
 
-        # Plot
-        # plt.figure(figsize=(12, 6))
-        # sns.barplot(x=correlations_sorted.index, y=correlations_sorted.values)
-        # plt.xticks(rotation=90)
-        # plt.title("Pearson Correlation between Features and Y")
-        # plt.ylabel("Correlation")
-        # plt.tight_layout()
-        # plt.show()
-
-        # pd.DataFrame(x_train).to_csv(f"{save_dir}/x_train_{rep}.csv", index=False)
-        # pd.DataFrame(y_train).to_csv(f"{save_dir}/y_train_{rep}.csv", index=False)
-        # pd.DataFrame(x_test).to_csv(f"{save_dir}/x_test_{rep}.csv", index=False)
-        # pd.DataFrame(y_test).to_csv(f"{save_dir}/y_test_{rep}.csv", index=False)
-
-
-        # pd.DataFrame(x_train).to_csv("Experiment_7/Intervened_X3_X4_X5/x_train.csv", index=False)
-        # pd.DataFrame(y_train).to_csv("Experiment_7/Intervened_X3_X4_X5/y_train.csv", index=False)
-        # pd.DataFrame(x_test).to_csv("Experiment_7/Intervened_X3_X4_X5/x_test.csv", index=False)
-        # pd.DataFrame(y_test).to_csv("Experiment_7/Intervened_X3_X4_X5/y_test.csv", index=False)
-
-
-        print (f'------------ 0. Mean prediction -----------------')
         error_mean = np.mean((y_test - np.mean(y_train)) ** 2)
         results['mean'][rep, ind_l] = error_mean
 
