@@ -8,7 +8,7 @@ rc("text", usetex=False)
 
 save_dir = "Experiment_7"
  
-with open('Experiment_7/mse__100_1.0_1.0_0.5.pkl', "rb") as f:
+with open('Experiment_7/mse_2__100_1.0_1.0_0.5.pkl', "rb") as f:
     data = pickle.load(f)
 
 
@@ -17,7 +17,12 @@ mean_mse = results["mean"].mean(axis=0)   # shape (4,)
 shat_mse = results["shat"].mean(axis=0)   # shape (4,)
 cicm_mse = results["cicm"].mean(axis=0)
 
-scenarios = ['Intervene_none', 'Intervene_3', 'Intervene_3,4', "Intervene_3,4,5"]
+print(mean_mse.shape)
+
+if mean_mse.shape[0] == 4:
+    scenarios = ['Intervene_none', 'Intervene_3', 'Intervene_3,4', "Intervene_3,4,5"]
+else:
+    scenarios = ['Intervene_none', 'Intervene_3', 'Intervene_3,4']
 x = np.arange(len(scenarios))
 width = 0.25
 
@@ -33,6 +38,6 @@ plt.xticks(x, scenarios)
 plt.legend()
 plt.tight_layout()
 
-plt.savefig(os.path.join(save_dir,'mse_plot.pdf'),
+plt.savefig(os.path.join(save_dir,'mse_plot_2.pdf'),
             bbox_inches='tight', format='pdf', dpi=300)
 plt.close()

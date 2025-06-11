@@ -111,13 +111,16 @@ for ind_l, l_d in enumerate(dif_inter):
         x_train = dataset.train["x_train"]
         y_train = dataset.train["y_train"]
 
-        where_to_intervene_test = [0,1,2]
-        mask_test = intervene_on_p(where_to_intervene_test, p - p_s)
-        dataset_test = gauss_tl(n_task, n, p, p_s, p_conf, eps, g, lambd, lambd_test, mask)
+        x_test = dataset.test['x_test']
+        y_test = dataset.test['y_test']
+
+        # where_to_intervene_test = [0,1,2]
+        # mask_test = intervene_on_p(where_to_intervene_test, p - p_s)
+        # dataset_test = gauss_tl(n_task, n, p, p_s, p_conf, eps, g, lambd, lambd_test, mask_test)
 
 
-        x_test = dataset_test.test['x_test']
-        y_test = dataset_test.test['y_test']
+        # x_test = dataset_test.test['x_test']
+        # y_test = dataset_test.test['y_test']
 
         n_ex = dataset.n_ex
 
@@ -236,7 +239,7 @@ save_all = {
     "inter": dif_inter,
 }
 
-file_name = ["icm_vs_cicm_2", str(n_repeat), str(eps), str(g), str(lambd)]
+file_name = ["icm_vs_cicm", str(n_repeat), str(eps), str(g), str(lambd)]
 file_name = "_".join(file_name)
 
 
@@ -250,7 +253,7 @@ save_all = {
     "n_repeat": n_repeat,
     "inter": dif_inter,
 }
-file_name = ['mse_2_', str(n_repeat), str(eps), str(g), str(lambd)]
+file_name = ['mse_', str(n_repeat), str(eps), str(g), str(lambd)]
 file_name = '_'.join(file_name)
 
 with open(os.path.join(save_dir, file_name+'.pkl'),'wb') as f:

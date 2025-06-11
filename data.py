@@ -126,10 +126,11 @@ def draw_tasks(n_task, n, params):
         eps_draw = gen_noise((n, 1))
         y_k = np.dot(xs_k, alpha) + eps * eps_draw
 
-        gamma_k = gamma[k]
+        gamma_k = gamma[k]/20
+    
         noise_k = g * gen_gauss(mu_n, cov_n[k], n)
 
-        xn_k = noise_k
+        xn_k = np.dot(y_k, gamma_k.T) + noise_k
         # + noise_k
         # noise_k
         # np.dot(y_k, gamma_k.T) + noise_k
