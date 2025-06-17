@@ -31,8 +31,8 @@ parser.add_argument("--p_s", default=3)
 parser.add_argument("--p_conf", default=0)
 parser.add_argument("--eps", default=2)
 parser.add_argument("--g", default=1)
-parser.add_argument("--lambd", default=0.1)
-parser.add_argument("--lambd_test", default=0.1)
+parser.add_argument("--lambd", default=0.5)
+parser.add_argument("--lambd_test", default=0.99)
 parser.add_argument("--use_hsic", default=0)
 parser.add_argument("--alpha_test", default=0.05)
 parser.add_argument("--n_repeat", default=100)
@@ -44,7 +44,6 @@ save_dir = args.save_dir
 
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
-
 
 n_task = int(args.n_task)
 n = int(args.n)
@@ -67,87 +66,91 @@ n_repeat = int(args.n_repeat)
 true_s = np.arange(p_s)
 
 results = {}
-methods = ["mean", "shat","cicm"]
+methods = ["pool", "shat", "sgreed", "strue", "mean", "msda"]
 
 color_dict, markers, legends = utils.get_color_dict()
 
+for m in methods:
+    results[m] = np.zeros((n_repeat, n_train_tasks.size))
+
+# for rep in xrange(n_repeat):
+
+save_all = {}
+save_all["results"] = results
+save_all["plotting"] = [methods, color_dict, legends, markers]
+save_all["n_train_tasks"] = n_train_tasks
+
+file_name = ["tl", str(n_repeat), str(eps), str(g), str(lambd)]
+file_name = "_".join(file_name)
 
 
-dif_inter = [[],[0], [0,1], [0,1,2]]
+dif_inter = [[], [0], [0, 1], [0, 1, 2]]
 
-            #  [0, 1], [0, 1, 2]]
+count = np.zeros((len(dif_inter), p))
 
-# count = np.zeros((len(dif_inter), p))
-count_subset = np.zeros((len(dif_inter), p))  # For subset search
-count_icp = np.zeros((len(dif_inter), p))  
+results = {}
+methods = ["mean", "shat", "cicm"]
 
 results = {}
 for m in methods:
   results[m]  = np.zeros((n_repeat, len(dif_inter)))
 
 
+count_subset = np.zeros((len(dif_inter), p))
+count_icp = np.zeros((len(dif_inter), p))
 
 for ind_l, l_d in enumerate(dif_inter):
-
-    print(f"Intervened index: {l_d}")
-
     for rep in range(n_repeat):
-        print(f"Repeat: {rep}")
 
         where_to_intervene = l_d
-        mask = intervene_on_p(where_to_intervene, p - p_s)
-        print(f'Mask: {mask}')
+        mask = utils.intervene_on_p(where_to_intervene, p - p_s)
 
-        dataset = gauss_tl(n_task, n, p, p_s, p_conf, eps, g, lambd, lambd_test, mask )
+        dataset = data.gauss_tl(
+            n_task, n, p, p_s, p_conf, eps, g, lambd, lambd_test, mask
+        )
         x_train = dataset.train["x_train"]
         y_train = dataset.train["y_train"]
-
-        x_test = dataset.test['x_test']
-        y_test = dataset.test['y_test']
-
-        # where_to_intervene_test = [0,2]
-        # mask_test = intervene_on_p(where_to_intervene_test, p - p_s)
-        # dataset_test = gauss_tl(n_task, n, p, p_s, p_conf, eps, g, lambd, lambd_test, mask_test)
-
-
-        # x_test = dataset_test.test['x_test']
-        # y_test = dataset_test.test['y_test']
+        x_test = dataset.test["x_test"]
+        y_test = dataset.test["y_test"]
 
         n_ex = dataset.n_ex
 
-        df_x = pd.DataFrame(x_train, columns=[f"X{i}" for i in range(x_train.shape[1])])
-        df_y = pd.Series(y_train.ravel(), name="Y")
-
-        # Compute correlations
-        correlations = df_x.corrwith(df_y)
-        correlations_sorted = correlations.reindex(correlations.abs().sort_values(ascending=False).index)
-        print(correlations_sorted)
+        print("------------- 0. Mean error ----------------")
 
         error_mean = np.mean((y_test - np.mean(y_train)) ** 2)
-        results['mean'][rep, ind_l] = error_mean
+        results["mean"][rep, ind_l] = error_mean
         print(error_mean)
 
-        print('----------- 1. Subset search - ICM ------------- ')
+        print("----------- 1. Subset search - ICM ------------- ")
 
         s_hat = subset_search.subset(
-            x_train, y_train, n_ex, valid_split=0.6, delta=alpha_test, use_hsic=use_hsic
+            x_train,
+            y_train,
+            dataset.n_ex,
+            valid_split=0.6,
+            delta=alpha_test,
+            use_hsic=use_hsic,
         )
+
+        # for pred in range(p):
+        #   if pred in s_hat:
+        #     count[ind_l, pred] += 1
         print(s_hat)
 
         for pred in range(p):
             if pred in s_hat:
                 count_subset[ind_l, pred] += 1
 
-        if s_hat.size> 0:
+        if s_hat.size > 0:
             lr_subset_search = linear_model.LinearRegression()
-            lr_subset_search.fit(x_train[:,s_hat], y_train)
-            results['shat'][rep, ind_l] = mse(lr_subset_search, x_test[:,s_hat], y_test)
-        else: 
-            results['shat'][rep, ind_l] = error_mean
+            lr_subset_search.fit(x_train[:, s_hat], y_train)
+            results["shat"][rep, ind_l] = mse(
+                lr_subset_search, x_test[:, s_hat], y_test
+            )
+        else:
+            results["shat"][rep, ind_l] = error_mean
 
-        print(results['shat'][rep, ind_l])
-
-        print('------------ 2. cICM ----------------')
+        print("------------ 2. cICM ----------------")
         envs = []
         start = 0
         for n in n_ex:
@@ -165,9 +168,8 @@ for ind_l, l_d in enumerate(dif_inter):
         verbose = False
 
         try:
-            result = fit(data_list, target=target_index, alpha=0.05, verbose=False)
+            result = fit(data_list, target=target_index, alpha=0.05, verbose=True)
             print("ICP result:", result.estimate)
-
 
             accepted_features = list(result.estimate)
 
@@ -175,7 +177,6 @@ for ind_l, l_d in enumerate(dif_inter):
                 if pred in accepted_features:
                     count_icp[ind_l, pred] += 1
 
-            
         except Exception as e:
             print("ICP failed:")
             traceback.print_exc()
@@ -185,27 +186,19 @@ for ind_l, l_d in enumerate(dif_inter):
             selected_features = list(result.estimate)
 
             lr_cicm = linear_model.LinearRegression()
-            lr_cicm.fit(x_train[:,selected_features], y_train)
-            results['cicm'][rep, ind_l] = mse(lr_cicm, x_test[:,selected_features], y_test)
+            lr_cicm.fit(x_train[:, selected_features], y_train)
+            results["cicm"][rep, ind_l] = mse(
+                lr_cicm, x_test[:, selected_features], y_test
+            )
 
             del lr_cicm
             gc.collect()
         else:
-            results['cicm'][rep, ind_l] = error_mean
-        
-        print( results['cicm'][rep, ind_l])
-                        
+            results["cicm"][rep, ind_l] = error_mean
 
-
-print(f' Count ICP: {count_icp}')
-
-
-print(f' Count subset: {count_subset}')
 
 # Save pickle
-# save_all = {"count": count, "n_repeat": n_repeat, "inter": dif_inter}
-# with open(os.path.join(save_dir, file_name + ".pkl"), "wb") as f:
-#     pickle.dump(save_all, f)
+# save_all = {'count': count, 'n_repeat': n_repeat, 'inter' : dif_inter}
 
 save_all = {
     "count_subset": count_subset,
@@ -213,16 +206,14 @@ save_all = {
     "n_repeat": n_repeat,
     "inter": dif_inter,
 }
-
-file_name = "icm_vs_cicm"
-
-
 with open(os.path.join(save_dir, file_name + ".pkl"), "wb") as f:
     pickle.dump(save_all, f)
 
+# zplot_interv(os.path.join(save_dir, file_name + '.pkl'))
 
-save_all = {
-    "results" : results,
+
+save_all_2 = {
+    "results": results,
     "plotting": [methods, color_dict, legends, markers],
     "n_repeat": n_repeat,
     "inter": dif_inter,
@@ -230,5 +221,5 @@ save_all = {
 
 file_name = "mse_icm_vs_cicm"
 
-with open(os.path.join(save_dir, file_name+'.pkl'),'wb') as f:
-  pickle.dump(save_all, f)
+with open(os.path.join(save_dir, file_name + ".pkl"), "wb") as f:
+    pickle.dump(save_all_2, f)

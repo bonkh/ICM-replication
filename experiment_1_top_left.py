@@ -24,7 +24,7 @@ parser.add_argument('--eps', default = 2)
 parser.add_argument('--g', default = 1)
 parser.add_argument('--lambd', default = 0.5)
 parser.add_argument('--lambd_test', default = 0.99)
-parser.add_argument('--use_hsic', default = 1)
+parser.add_argument('--use_hsic', default = 0)
 parser.add_argument('--alpha_test', default = 0.05)
 parser.add_argument('--n_repeat', default = 100)
 parser.add_argument('--max_l', default = 100)
@@ -126,7 +126,7 @@ for rep in range(n_repeat):
                                    delta=alpha_test, valid_split=0.6, 
                                    use_hsic=use_hsic)
     
-  
+      print(s_hat)  
     if p<10:
       if s_hat.size> 0:
         lr_s_temp = linear_model.LinearRegression()

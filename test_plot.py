@@ -8,7 +8,7 @@ rc("text", usetex=False)
 
 save_dir = "Experiment_7"
  
-with open('Experiment_7/icm_vs_cicm_100_1.0_1.0_0.5.pkl', "rb") as f:
+with open('Experiment_7/icm_vs_cicm.pkl', "rb") as f:
     data = pickle.load(f)
 print(data)
 
@@ -20,7 +20,7 @@ width = 0.1
 x_pos = np.arange(len(inter))  # 4 different intervention cases
 num_features = count_subset.shape[1]
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 5), sharey=True)
 
 for ax, count, title in zip(
     [ax1, ax2],
@@ -40,7 +40,7 @@ for ax, count, title in zip(
 
     ax.set_title(title, fontsize=16)
     ax.set_xticks(np.arange(len(inter)))
-    ax.set_xticklabels([r'-', r'$4$', r'$4,5$'], fontsize=14)
+    ax.set_xticklabels(['No intervention', 'Intervene 3', 'Intervene 3,4', 'Intervene 3,4,5'], fontsize=14)
     ax.set_xlabel('Intervened covariates', fontsize=14)
     ax.grid(axis='y', linestyle='--', alpha=0.4)
 

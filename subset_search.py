@@ -211,9 +211,11 @@ def full_search(train_x, train_y, valid_x, valid_y, n_samples_per_task, n_sample
     all_pvals.append(pvals)
 
     # Step 2: Loop over all subsets of features
-
+    print(f'ICM subset of features:')
     for i in range(1, rang.size + 1):
         for s in itertools.combinations(rang, i):
+
+
             currentIndex = rang[np.array(s)]
             regr = linear_model.LinearRegression()
             
