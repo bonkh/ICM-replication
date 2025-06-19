@@ -1,0 +1,16 @@
+List of features:
+
+ed | Years of Education Completed (See below)
+female |  1 = Female/0 = Male
+black | 1 = Black/0 = Not-Black
+Hispanic | 1 = Hispanic/0 = Not-Hispanic
+bytest | Base Year Composite Test Score. (These are achievement tests given to high school seniors in the sample)
+dadcoll | 1 = Father is a College Graduate/ 0 = Father is not a College Graduate
+momcoll | 1 = Mother is a College Graduate/ 0 = Mother is not a College Graduate
+incomehi | 1 = Family Income > $25,000 per year/ 0 = Income ≤ $25,000 per year.
+ownhome | 1 = Family Owns Home / 0 = Family Does not Own Home
+urban | 1 = School in Urban Area / = School not in Urban Area
+cue80 | County Unempolyment rate in 1980
+stwmfg80 | State Hourly Wage in Manufacturing in 1980
+dist | Distance from 4yr College in 10's of miles
+tuition | Avg. State 4yr College Tuition in $1000's 
