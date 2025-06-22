@@ -53,7 +53,7 @@ ax1.set_yticks(np.arange(0, 1.1, 0.2))
 ax1.set_yticklabels([r"$0$", r"$0.2$", r"$0.4$", r"$0.6$", r"$0.8$", r"$1$"], fontsize=12)
 
 plt.tight_layout()
-plt.savefig(os.path.join(save_dir,'scen_1_plot.pdf'),
+plt.savefig(os.path.join(save_dir,'feature_selection_plot.pdf'),
             bbox_inches='tight', format='pdf', dpi=300)
 plt.close()
 

@@ -42,14 +42,7 @@ def gen_coef(coef_0, lambd, mask=None):
         # print(f'mask_compl: {mask_compl}')
         draw = np.random.normal(0, 1, coef_0.shape)
         ret = (1 - lambd) * coef_0 + lambd * draw
-
-        # print(f'Coef: {coef_0}')
-        # print(f'Before: {ret}')
-        # ret[mask_compl] = coef_0[mask_compl]
-        perturbation = np.random.normal(0, 0.01, coef_0.shape) 
-        print(perturbation)
-        ret[mask_compl] = coef_0[mask_compl] + perturbation[mask_compl]
-
+        ret[mask_compl] = coef_0[mask_compl]
         # print(f'After: {ret}')
         return ret
     else:
@@ -84,27 +77,16 @@ def covs_all(n_task, p_s, p_n, mask=None, soft_strength=0.2):
 
 
         cov_s.append(draw_cov(p_s))
-
-        # print(f'COV_S: {cov_s}')
         cov_n_k = draw_cov(p_n)
-
-
-        # print(f'Before fix: {cov_n_k}')
 
         if fix > 0:
 
-            # soft_cov = draw_cov(fix)
-            
-            # soft_intervene_cov = (
-            #     (1 - soft_strength) * ref + soft_strength * soft_cov
-            # )
+            soft_cov = draw_cov(fix)
+            soft_intervene_cov = (
+                (1 - soft_strength) * ref + soft_strength * soft_cov
+            )
 
-            # cov_n_k[-fix:, -fix:] = soft_intervene_cov
-
-
-            cov_n_k[-fix:, -fix:] = ref
-        
-        # print(f'After fix: {cov_n_k}')
+            cov_n_k[-fix:, -fix:] = soft_intervene_cov
         eig = np.linalg.eig(cov_n_k)
 
         if not np.all(eig[0] > 0):
@@ -128,9 +110,6 @@ def covs_all(n_task, p_s, p_n, mask=None, soft_strength=0.2):
                     cov_n_k[0 : p_n - fix, -fix:] = samp.T
 
                 pd = np.all(np.linalg.eig(cov_n_k)[0] > 0)
-
-
-        # print(f'After process: {cov_n_k}')
         cov_n.append(cov_n_k)
 
     return cov_s, cov_n
@@ -157,23 +136,27 @@ def draw_tasks(n_task, n, params):
     gamma = params["gamma"]
     g = params["g"]
     x, y, n_ex = [], [], []
-    # print(f'gamma: {gamma}')
-    # print(f'Alpha is alpha: {alpha}')
 
     for k in range(n_task):
         xs_k = gen_gauss(mu_s, cov_s[k], n)
         eps_draw = gen_noise((n, 1))
 
-        y_k = np.dot(xs_k, alpha) + eps * eps_draw
+        # y_k = np.dot(xs_k, alpha) + eps * eps_draw
+
+        x1 = xs_k[:, 0]
+        x2 = xs_k[:, 1]
+        x3 = xs_k[:, 2]
+        y_k = np.sin(x1 + x2) + np.tanh(x3) + eps * eps_draw
+        y_k = y_k.reshape(-1, 1)
+
 
         gamma_k = gamma[k]
 
         noise_k = g * gen_gauss(mu_n, cov_n[k], n)
 
         xn_k = np.dot(y_k, gamma_k.T) + noise_k
-        # + noise_k
-        # noise_k
-        # np.dot(y_k, gamma_k.T) + noise_k
+
+
         beta_k = beta[k]
 
         if p_nconf > 0:
@@ -196,6 +179,8 @@ def draw_all(
     mu_n = np.zeros(p_n)
     cov_s, cov_n = covs_all(n_task, p_s, p_n, mask=mask)
 
+    # print(f'COV_S: {cov_s}')
+    # print(f'COv_n: {cov_n}')
     gamma, beta = coefs_all(n_task, p_n, p_conf, lambd, beta_0, gamma_0, mask=mask)
     params = {
         "mu_s": mu_s,
@@ -216,7 +201,7 @@ def draw_all(
     return x, y, x_test, y_test, n_ex, n_ex_test, params
 
 
-class gauss_tl(object):
+class gauss_tl_non_linear(object):
     """
     Class for synthetic data experiments.
     """
@@ -232,13 +217,12 @@ class gauss_tl(object):
         p_n = p - p_s
         p_nconf = p_s - p_conf
         alpha = gen_coef(np.random.normal(0, 1, (p_s, 1)), 0)
-        print(f'ALPHA SHAPE {alpha.shape}')
-        alpha = np.array([1.4] * p_s).reshape(-1, 1)
-        print(f'ALPHA SHAPE {alpha.shape}')
+        print(alpha)
 
         # gamma_0 = np.random.normal(0, 1, (p_n, 1))
         gamma_0 = np.array([[0.5], [0.5], [0.5]])
 
+        # print(f'GAMMA 0: {gamma_0}')
 
 
         beta_0 = np.random.normal(0, 1, (p_conf, p_n))

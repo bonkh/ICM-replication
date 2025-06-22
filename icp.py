@@ -499,8 +499,10 @@ def fit(data, target, alpha=0.05, sets=None, precompute=True, verbose=False, col
     S_best = None
     for S in candidates:
         S = set(S)
+
         # Test hypothesis of invariance
         reject, conf_interval, p_value, coefs = _test_hypothesis(target, S, data, alpha)
+
         # Store result appropriately and update estimate (if necessary)
         p_values[tuple(S)] = p_value
         coefficients[tuple(S)] = coefs
@@ -508,11 +510,11 @@ def fit(data, target, alpha=0.05, sets=None, precompute=True, verbose=False, col
         if not reject:
             confidence_intervals.append(conf_interval)
             accepted.append(S)
-            estimate &= S
+            # estimate &= S
+
             if p_value > max_p_value:
                 max_p_value = p_value
-                S_best = S
-
+            
         if reject:
             rejected.append(S)
         # Optionally, print output
@@ -531,36 +533,13 @@ def fit(data, target, alpha=0.05, sets=None, precompute=True, verbose=False, col
     if len(accepted) == 0:
         estimate = None
     else:
-        # estimate = S_best
-
+        max_p_value = max(p_values[tuple(S)] for S in accepted)
         max_p_sets = [S for S in accepted if p_values[tuple(S)] == max_p_value]
-        min_len = min(len(s) for s in max_p_sets)
-        max_p_sets_same_len = [s for s in max_p_sets if len(s) == min_len]
 
-        print(f'Max p-value with the min len: {max_p_sets_same_len}')
+        print(f'Max p-value sets : {max_p_sets}')
 
-        if len(max_p_sets_same_len) == 1:
-            estimate = max_p_sets_same_len[0]
-        else:
+        estimate = set.intersection(*map(set, max_p_sets))
 
-            # def total_abs_coef(s):
-            #     coefs = coefficients[tuple(s)]
-            #     return sum(abs(c) for c in coefs)
-            
-            # for S in max_p_sets_same_len:
-            #     coef = coefficients[tuple(S)]
-            #     print(f"Subset {S} has coefficients: {coef}")
-
-            # # estimate = max(max_p_sets_same_len, key=total_abs_coef)
-            # total_abs_coef = lambda s: float(np.sum(np.abs(coefficients[tuple(s)][0])))
-
-            # # Choose estimate as the subset with max total absolute coefficient
-            # estimate = max(max_p_sets_same_len, key=total_abs_coef)
-
-
-
-
-            estimate = min(max_p_sets, key=lambda s: len(s))
 
     print("Estimated parental set: %s" % estimate) if verbose else None
     # Create and return the result object

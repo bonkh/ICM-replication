@@ -31,8 +31,8 @@ parser.add_argument("--p_s", default=3)
 parser.add_argument("--p_conf", default=0)
 parser.add_argument("--eps", default=2)
 parser.add_argument("--g", default=1)
-parser.add_argument("--lambd", default=0.1)
-parser.add_argument("--lambd_test", default=0.1)
+parser.add_argument("--lambd", default=0.5)
+parser.add_argument("--lambd_test", default=0.5)
 parser.add_argument("--use_hsic", default=0)
 parser.add_argument("--alpha_test", default=0.05)
 parser.add_argument("--n_repeat", default=100)
@@ -67,7 +67,7 @@ n_repeat = int(args.n_repeat)
 true_s = np.arange(p_s)
 
 results = {}
-methods = ["mean", "shat","cicm"]
+methods = ["mean", "causal" ,"icm","cicm"]
 
 color_dict, markers, legends = utils.get_color_dict()
 
@@ -75,15 +75,18 @@ color_dict, markers, legends = utils.get_color_dict()
 
 dif_inter = [[],[0], [0,1], [0,1,2]]
 
-            #  [0, 1], [0, 1, 2]]
+dif_inter_test = [[0,1, 2], [0, 1,2], [0,1,2], [0,1,2]]
 
 # count = np.zeros((len(dif_inter), p))
 count_subset = np.zeros((len(dif_inter), p))  # For subset search
 count_icp = np.zeros((len(dif_inter), p))  
 
 results = {}
+results_ood = {}
+
 for m in methods:
   results[m]  = np.zeros((n_repeat, len(dif_inter)))
+  results_ood[m]  = np.zeros((n_repeat, len(dif_inter)))
 
 
 
@@ -96,22 +99,22 @@ for ind_l, l_d in enumerate(dif_inter):
 
         where_to_intervene = l_d
         mask = intervene_on_p(where_to_intervene, p - p_s)
-        print(f'Mask: {mask}')
 
         dataset = gauss_tl(n_task, n, p, p_s, p_conf, eps, g, lambd, lambd_test, mask )
+
+
+       
         x_train = dataset.train["x_train"]
         y_train = dataset.train["y_train"]
 
         x_test = dataset.test['x_test']
         y_test = dataset.test['y_test']
 
-        # where_to_intervene_test = [0,2]
-        # mask_test = intervene_on_p(where_to_intervene_test, p - p_s)
-        # dataset_test = gauss_tl(n_task, n, p, p_s, p_conf, eps, g, lambd, lambd_test, mask_test)
-
-
-        # x_test = dataset_test.test['x_test']
-        # y_test = dataset_test.test['y_test']
+        where_to_intervene_test = dif_inter_test[ind_l]
+        mask_test = intervene_on_p(where_to_intervene_test, p - p_s)
+        dataset_test = gauss_tl(n_task, n, p, p_s, p_conf, eps, g, lambd, lambd_test)
+        x_test_ood = dataset_test.test['x_test']
+        y_test_ood = dataset_test.test['y_test']
 
         n_ex = dataset.n_ex
 
@@ -123,16 +126,53 @@ for ind_l, l_d in enumerate(dif_inter):
         correlations_sorted = correlations.reindex(correlations.abs().sort_values(ascending=False).index)
         print(correlations_sorted)
 
+        print('-------------- 0. Mean prediction --------------')
+
         error_mean = np.mean((y_test - np.mean(y_train)) ** 2)
         results['mean'][rep, ind_l] = error_mean
-        print(error_mean)
+        print(f'Error mean: {error_mean}')
 
-        print('----------- 1. Subset search - ICM ------------- ')
+        error_mean_ood = np.mean((y_test_ood - np.mean(y_train)) ** 2)
+        results_ood['mean'][rep, ind_l] = error_mean_ood
+        print(f'Error mean ood: {error_mean_ood}')
+
+        # print('------------------- 1. True causal ------------------')
+        # print(f'DATA ALPHA: {dataset.alpha}')
+       
+        
+        # alpha = dataset.alpha
+        # X = x_train[:, s_causal]
+
+        # y_pred = np.dot(x_test[:, s_causal], alpha)
+        # results['true_causal'][rep, ind_l] = np.mean((y_test - y_pred) ** 2)
+        # print(f"Error: { results['true_causal'][rep, ind_l]}")
+
+
+        # y_pred_ood = np.dot(x_test_ood[:, s_causal], alpha)
+        # results_ood['true_causal'][rep, ind_l] = np.mean((y_test_ood - y_pred_ood) ** 2)
+        # print(f"OOD Error: {results_ood['true_causal'][rep, ind_l]}")
+
+        print ('------------- 1. Causal ----------------')
+        s_causal =  np.arange(p_s)
+     
+        print(f'S causal: {s_causal}')
+
+        lr_causal = linear_model.LinearRegression()
+        lr_causal.fit(x_train[:,s_causal], y_train)
+
+        results['causal'][rep, ind_l] = mse(lr_causal, x_test[:,s_causal], y_test)
+        results_ood['causal'][rep, ind_l] = mse(lr_causal, x_test_ood[:,s_causal], y_test_ood)
+
+        print (f"Causal error: {results['causal'][rep, ind_l]}")
+        print(f"Causal error ood: { results_ood['causal'][rep, ind_l]}")
+
+
+        print('----------- 2. Subset search - ICM ------------- ')
 
         s_hat = subset_search.subset(
-            x_train, y_train, n_ex, valid_split=0.6, delta=alpha_test, use_hsic=use_hsic
+            x_train, y_train, n_ex, valid_split=0.5, delta=alpha_test, use_hsic=use_hsic
         )
-        print(s_hat)
+        print(f'S hat: {s_hat}')
 
         for pred in range(p):
             if pred in s_hat:
@@ -141,11 +181,17 @@ for ind_l, l_d in enumerate(dif_inter):
         if s_hat.size> 0:
             lr_subset_search = linear_model.LinearRegression()
             lr_subset_search.fit(x_train[:,s_hat], y_train)
-            results['shat'][rep, ind_l] = mse(lr_subset_search, x_test[:,s_hat], y_test)
-        else: 
-            results['shat'][rep, ind_l] = error_mean
 
-        print(results['shat'][rep, ind_l])
+            results['icm'][rep, ind_l] = mse(lr_subset_search, x_test[:,s_hat], y_test)
+            results_ood['icm'][rep, ind_l] = mse(lr_subset_search, x_test_ood[:,s_hat], y_test_ood)
+
+        else: 
+            results['icm'][rep, ind_l] = error_mean
+            results_ood['icm'][rep, ind_l] = error_mean_ood
+
+        print(f"Error: {results['icm'][rep, ind_l]}")
+        print(f"OOD error: {results_ood['icm'][rep, ind_l]}")
+
 
         print('------------ 2. cICM ----------------')
         envs = []
@@ -154,18 +200,18 @@ for ind_l, l_d in enumerate(dif_inter):
             end = start + n
             env_data = np.column_stack(
                 [x_train[start:end], y_train[start:end]]
-            )  # Combine X and y
+            )
 
             envs.append(env_data)
             start = end
 
         data_list = envs
         target_index = x_train.shape[1]
-        alpha = 0.05  # Set your significance level
+        alpha = 0.1
         verbose = False
 
         try:
-            result = fit(data_list, target=target_index, alpha=0.05, verbose=False)
+            result = fit(data_list, target=target_index, alpha=alpha, verbose=False)
             print("ICP result:", result.estimate)
 
 
@@ -186,14 +232,19 @@ for ind_l, l_d in enumerate(dif_inter):
 
             lr_cicm = linear_model.LinearRegression()
             lr_cicm.fit(x_train[:,selected_features], y_train)
-            results['cicm'][rep, ind_l] = mse(lr_cicm, x_test[:,selected_features], y_test)
 
-            del lr_cicm
-            gc.collect()
+
+            results['cicm'][rep, ind_l] = mse(lr_cicm, x_test[:,selected_features], y_test)
+            results_ood['cicm'][rep, ind_l] = mse(lr_cicm, x_test_ood[:,selected_features], y_test_ood)
+
+
         else:
             results['cicm'][rep, ind_l] = error_mean
+            results_ood['cicm'][rep, ind_l] = error_mean_ood
         
-        print( results['cicm'][rep, ind_l])
+
+        print(f"Error: {results['cicm'][rep, ind_l]}")
+        print(f"OOD error: {results_ood['cicm'][rep, ind_l]}")
                         
 
 
@@ -202,10 +253,6 @@ print(f' Count ICP: {count_icp}')
 
 print(f' Count subset: {count_subset}')
 
-# Save pickle
-# save_all = {"count": count, "n_repeat": n_repeat, "inter": dif_inter}
-# with open(os.path.join(save_dir, file_name + ".pkl"), "wb") as f:
-#     pickle.dump(save_all, f)
 
 save_all = {
     "count_subset": count_subset,
@@ -221,14 +268,27 @@ with open(os.path.join(save_dir, file_name + ".pkl"), "wb") as f:
     pickle.dump(save_all, f)
 
 
-save_all = {
+save_all_error_scen1 = {
     "results" : results,
     "plotting": [methods, color_dict, legends, markers],
     "n_repeat": n_repeat,
     "inter": dif_inter,
 }
 
-file_name = "mse_icm_vs_cicm"
+file_name = "mse_icm_vs_cicm_scen1"
 
 with open(os.path.join(save_dir, file_name+'.pkl'),'wb') as f:
-  pickle.dump(save_all, f)
+  pickle.dump(save_all_error_scen1, f)
+
+
+save_all_error_scen2 = {
+    "results" : results_ood,
+    "plotting": [methods, color_dict, legends, markers],
+    "n_repeat": n_repeat,
+    "inter": dif_inter,
+}
+
+file_name = "mse_icm_vs_cicm_scen2"
+
+with open(os.path.join(save_dir, file_name+'.pkl'),'wb') as f:
+  pickle.dump(save_all_error_scen2, f)
