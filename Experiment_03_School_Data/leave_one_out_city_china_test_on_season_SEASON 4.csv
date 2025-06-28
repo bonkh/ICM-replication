@@ -1,0 +1,61 @@
+leave_out_task,n_tasks,method,loss,selected_features
+beijing,2,pooling,1.3573410808653974,
+beijing,2,mean,1.6075450508382756,
+beijing,2,sgreedy,1.3498936949429357,"['TempC', 'WindSp', 'PrecipCm', 'WindDir_SE', 'WindDir_cv', 'WindDir_SW']"
+beijing,2,shat,1.3087589873115244,"['DewPt', 'TempC', 'WindSp', 'PrecipHr', 'PrecipCm', 'WindDir_NW', 'WindDir_SE', 'WindDir_cv', 'WindDir_SW']"
+beijing,3,pooling,1.4281270833212187,
+beijing,3,mean,1.5789752555757928,
+beijing,3,sgreedy,1.4238864781984342,"['WindSp', 'PrecipHr', 'WindDir_NW', 'WindDir_SE', 'WindDir_cv', 'WindDir_SW']"
+beijing,3,shat,1.4238864781984342,"['WindSp', 'PrecipHr', 'WindDir_NW', 'WindDir_SE', 'WindDir_cv', 'WindDir_SW']"
+beijing,4,pooling,1.2396852532442195,
+beijing,4,mean,1.5895017592330813,
+beijing,4,sgreedy,1.200843181028257,"['Humidity', 'Press', 'TempC', 'WindSp', 'WindDir_SW']"
+beijing,4,shat,1.200843181028257,"['Humidity', 'Press', 'TempC', 'WindSp', 'WindDir_SW']"
+changdu,2,pooling,0.3996223513907081,
+changdu,2,mean,0.7922827429360472,
+changdu,2,sgreedy,0.41761783749406534,"['Humidity', 'Press', 'TempC', 'WindSp', 'WindDir_SE', 'WindDir_cv', 'WindDir_SW']"
+changdu,2,shat,0.41761783749406534,"['Humidity', 'Press', 'TempC', 'WindSp', 'WindDir_SE', 'WindDir_cv', 'WindDir_SW']"
+changdu,3,pooling,0.3570865527304088,
+changdu,3,mean,0.7357243200498486,
+changdu,3,sgreedy,0.3729346813837648,"['Humidity', 'TempC', 'WindSp', 'WindDir_SE', 'WindDir_cv', 'WindDir_SW']"
+changdu,3,shat,0.36867678776978524,"['DewPt', 'TempC', 'WindSp', 'WindDir_SE', 'WindDir_cv', 'WindDir_SW']"
+changdu,4,pooling,0.36028418030612674,
+changdu,4,mean,0.6523562302370752,
+changdu,4,sgreedy,0.37465761406238623,"['Humidity', 'TempC', 'WindSp', 'WindDir_SE', 'WindDir_cv', 'WindDir_SW']"
+changdu,4,shat,0.3697435906767451,"['DewPt', 'TempC', 'WindSp', 'WindDir_SE', 'WindDir_cv', 'WindDir_SW']"
+guangzhou,2,pooling,0.970822402532647,
+guangzhou,2,mean,0.5718245920608006,
+guangzhou,2,sgreedy,1.2229409534916005,"['Humidity', 'Press', 'WindSp', 'WindDir_SE', 'WindDir_SW']"
+guangzhou,2,shat,1.2229409534916005,"['Humidity', 'Press', 'WindSp', 'WindDir_SE', 'WindDir_SW']"
+guangzhou,3,pooling,0.9188084743839937,
+guangzhou,3,mean,0.5026178102152129,
+guangzhou,3,sgreedy,1.013187630307871,"['Humidity', 'Press', 'WindSp', 'WindDir_SE']"
+guangzhou,3,shat,1.013187630307871,"['Humidity', 'Press', 'WindSp', 'WindDir_SE']"
+guangzhou,4,pooling,0.7892861175776621,
+guangzhou,4,mean,0.5123163833070972,
+guangzhou,4,sgreedy,0.8732072090172844,"['Humidity', 'Press', 'WindSp', 'WindDir_NW', 'WindDir_SE', 'WindDir_SW']"
+guangzhou,4,shat,0.8840631118425772,"['DewPt', 'Press', 'TempC', 'WindSp', 'WindDir_SE', 'WindDir_SW']"
+shanghai,2,pooling,0.6978830627297592,
+shanghai,2,mean,0.6452226228780772,
+shanghai,2,sgreedy,0.783519600932257,"['Humidity', 'Press', 'WindSp', 'WindDir_SE', 'WindDir_SW']"
+shanghai,2,shat,0.783519600932257,"['Humidity', 'Press', 'WindSp', 'WindDir_SE', 'WindDir_SW']"
+shanghai,3,pooling,0.6726206212454948,
+shanghai,3,mean,0.5879996462498743,
+shanghai,3,sgreedy,0.7581329530866097,"['Humidity', 'TempC', 'WindSp', 'WindDir_NW', 'WindDir_SE']"
+shanghai,3,shat,0.7581329530866097,"['Humidity', 'TempC', 'WindSp', 'WindDir_NW', 'WindDir_SE']"
+shanghai,4,pooling,0.6088288078945547,
+shanghai,4,mean,0.5949777780530507,
+shanghai,4,sgreedy,0.7102299950559916,"['Humidity', 'TempC', 'WindSp', 'WindDir_NW', 'WindDir_SE', 'WindDir_SW']"
+shanghai,4,shat,0.7102299950559916,"['Humidity', 'TempC', 'WindSp', 'WindDir_NW', 'WindDir_SE', 'WindDir_SW']"
+shenyang,2,pooling,0.6235688244290742,
+shenyang,2,mean,0.5998119319790097,
+shenyang,2,sgreedy,0.6256188875707724,"['Humidity', 'Press', 'WindSp', 'WindDir_SE', 'WindDir_SW']"
+shenyang,2,shat,0.6256188875707724,"['Humidity', 'Press', 'WindSp', 'WindDir_SE', 'WindDir_SW']"
+shenyang,3,pooling,0.6060222412428801,
+shenyang,3,mean,0.6140890064915339,
+shenyang,3,sgreedy,0.5751936224043851,"['Humidity', 'TempC', 'WindSp', 'WindDir_NW', 'WindDir_SE']"
+shenyang,3,shat,0.5751936224043851,"['Humidity', 'TempC', 'WindSp', 'WindDir_NW', 'WindDir_SE']"
+shenyang,4,pooling,0.5745136056162066,
+shenyang,4,mean,0.6218470687019944,
+shenyang,4,sgreedy,0.5392052070779646,"['Humidity', 'TempC', 'WindSp', 'WindDir_SE', 'WindDir_SW']"
+shenyang,4,shat,0.5388409207266904,"['DewPt', 'TempC', 'WindSp', 'WindDir_SE', 'WindDir_SW']"
