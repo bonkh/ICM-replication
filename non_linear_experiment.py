@@ -27,7 +27,7 @@ parser.add_argument('--lambd', default = 0.5)
 parser.add_argument('--lambd_test', default = 0.99)
 parser.add_argument('--use_hsic', default = 0)
 parser.add_argument('--alpha_test', default = 0.05)
-parser.add_argument('--n_repeat', default = 10)
+parser.add_argument('--n_repeat', default = 100)
 parser.add_argument('--max_l', default = 100)
 parser.add_argument('--n_ul', default = 100)
 args = parser.parse_args()
@@ -68,7 +68,6 @@ methods = [
             'strue',
             'mean',
             'msda'
-            # 'dica'
           ]
 
 n_train_tasks = np.arange(n_train_tasks[0], n_train_tasks[-1] + 1, 1)

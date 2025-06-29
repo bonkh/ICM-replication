@@ -3,6 +3,7 @@ import scipy as sc
 
 from scipy.stats import wishart
 
+
 def linear(X, params):
     alphaC = params[0]
     return alphaC * X
@@ -38,12 +39,10 @@ def draw_cov(p):
 def gen_coef(coef_0, lambd, mask=None):
     if not mask is None:
         mask_compl = ((mask + 1) % 2).astype(bool)
-
-        # print(f'mask_compl: {mask_compl}')
         draw = np.random.normal(0, 1, coef_0.shape)
         ret = (1 - lambd) * coef_0 + lambd * draw
         ret[mask_compl] = coef_0[mask_compl]
-        # print(f'After: {ret}')
+
         return ret
     else:
         return (1 - lambd) * coef_0 + lambd * (
@@ -61,20 +60,15 @@ def covs_all(n_task, p_s, p_n, mask=None, soft_strength=0.2):
     fix = -1
     ref = None
 
-    # print(f'Mask: {mask}')
     if not mask is None:
         fix_mask = np.where(mask == False)[0]
 
-        # print (f'fix_mask: {fix_mask}')
         if len(fix_mask) > 0:
             fix = fix_mask.size
 
             ref = draw_cov(fix)
 
-            # print(f'Ref: {ref}')
-
     for k in range(n_task):
-
 
         cov_s.append(draw_cov(p_s))
         cov_n_k = draw_cov(p_n)
@@ -82,9 +76,7 @@ def covs_all(n_task, p_s, p_n, mask=None, soft_strength=0.2):
         if fix > 0:
 
             soft_cov = draw_cov(fix)
-            soft_intervene_cov = (
-                (1 - soft_strength) * ref + soft_strength * soft_cov
-            )
+            soft_intervene_cov = (1 - soft_strength) * ref + soft_strength * soft_cov
 
             cov_n_k[-fix:, -fix:] = soft_intervene_cov
         eig = np.linalg.eig(cov_n_k)
@@ -143,11 +135,12 @@ def draw_tasks(n_task, n, params):
 
         # y_k = np.dot(xs_k, alpha) + eps * eps_draw
 
-        x1 = xs_k[:, 0]
-        x2 = xs_k[:, 1]
-        x3 = xs_k[:, 2]
+        x1 = xs_k[:, 0:1]  # shape (4000, 1)
+        x2 = xs_k[:, 1:2]
+        x3 = xs_k[:, 2:3]
         y_k = np.sin(x1 + x2) + np.tanh(x3) + eps * eps_draw
-        y_k = y_k.reshape(-1, 1)
+
+        # y_k = y_k.reshape(-1, 1)
 
 
         gamma_k = gamma[k]
@@ -155,7 +148,6 @@ def draw_tasks(n_task, n, params):
         noise_k = g * gen_gauss(mu_n, cov_n[k], n)
 
         xn_k = np.dot(y_k, gamma_k.T) + noise_k
-
 
         beta_k = beta[k]
 
@@ -217,23 +209,14 @@ class gauss_tl_non_linear(object):
         p_n = p - p_s
         p_nconf = p_s - p_conf
         alpha = gen_coef(np.random.normal(0, 1, (p_s, 1)), 0)
-        print(alpha)
 
-        # gamma_0 = np.random.normal(0, 1, (p_n, 1))
-        gamma_0 = np.array([[0.5], [0.5], [0.5]])
-
-        # print(f'GAMMA 0: {gamma_0}')
-
-
+        gamma_0 = np.random.normal(0, 1, (p_n, 1))
         beta_0 = np.random.normal(0, 1, (p_conf, p_n))
 
-        # print(f'Train set')
 
         x, y, x_test, y_test, n_ex, n_ex_test, params = draw_all(
             alpha, n_task, n, p, p_s, p_conf, eps, g, lambd, beta_0, gamma_0, mask=mask
         )
-
-        # print(f'Test set')
 
         xt, yt, x_tt, y_tt, n_ext, n_ex_tt, params_test = draw_all(
             alpha,

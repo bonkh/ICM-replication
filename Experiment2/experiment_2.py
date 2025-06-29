@@ -57,5 +57,5 @@ print("Non-causal scenarios:", len(non_causal_dict))
 # with open("detailed_results.json", "w") as f:
 #     json.dump(detailed_result, f, indent=2)
 
-# plot_all_errors(non_causal_result)
+plot_all_errors(non_causal_result)
 

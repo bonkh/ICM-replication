@@ -211,6 +211,7 @@ legends = {    'strue' : r'$\beta^{CS(cau)}$',
                'pool' : r'$\beta^{CS}$',
               'mean'   : r'$\beta^{mean}$',
             }
+
 def plot_all_errors(results, output_pdf='all_error_boxplots.pdf'):
     if not results:
         print("No results to plot.")

@@ -79,8 +79,13 @@ def get_color_dict():
 
   return colors, markers, legends
 
+# def mse(model, x, y):
+#   return np.mean((model.predict(x)-y)**2)
 def mse(model, x, y):
-  return np.mean((model.predict(x)-y)**2)
+    y_pred = model.predict(x).ravel()
+    y_true = y.ravel()
+    return np.mean((y_pred - y_true) ** 2)
+
 
 
 def compute_rbf_kernel_blockwise(X, Y=None, gamma=1.0, block_size=500, dtype=np.float32):

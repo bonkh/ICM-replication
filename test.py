@@ -11,7 +11,11 @@ def plot_mse_results(pkl_path, save_dir="Experiment_7", save_name="mse_plot.pdf"
         data = pickle.load(f)
 
     results = data["results"]
+    print(results['pool'])
+    print(results['pool'].shape)
+
     mean_mse = results["mean"].mean(axis=0)
+    pool_mse = results["pool"].mean(axis=0)
     causal_mse = results["causal"].mean(axis=0)
     shat_mse = results["icm"].mean(axis=0)
     cicm_mse = results["cicm"].mean(axis=0)
@@ -26,7 +30,8 @@ def plot_mse_results(pkl_path, save_dir="Experiment_7", save_name="mse_plot.pdf"
     width = 0.1
 
     plt.figure(figsize=(10, 6))
-    plt.bar(x - width, mean_mse, width, label='Mean')
+    plt.bar(x - 2*width, mean_mse, width, label='Mean')
+    plt.bar(x - width, pool_mse, width, label='Pooling')
     plt.bar(x, causal_mse, width, label='Causal')
     plt.bar(x + width, shat_mse, width, label='ICM')
     plt.bar(x + 2 * width, cicm_mse, width, label='cICM')

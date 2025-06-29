@@ -3,7 +3,7 @@ from sklearn import linear_model
 import matplotlib.pyplot as plt
 import argparse
 import subset_search
-from data import *
+from ex_7_data import *
 from utils import *
 from msda import *
 from dica import *
@@ -13,6 +13,8 @@ import traceback
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.linear_model import RidgeCV
+from sklearn.linear_model import LassoCV
 
 
 import pickle
@@ -20,7 +22,8 @@ import os
 from scipy.io import savemat
 
 
-np.random.seed(1234)
+# np.random.seed(1234)
+np.random.seed(2025)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save_dir", default="Experiment_7")
@@ -67,7 +70,7 @@ n_repeat = int(args.n_repeat)
 true_s = np.arange(p_s)
 
 results = {}
-methods = ["mean", "causal" ,"icm","cicm"]
+methods = ["mean", "pool","causal" ,"icm","cicm"]
 
 color_dict, markers, legends = utils.get_color_dict()
 
@@ -75,10 +78,10 @@ color_dict, markers, legends = utils.get_color_dict()
 
 dif_inter = [[],[0], [0,1], [0,1,2]]
 
-dif_inter_test = [[0,1, 2], [0, 1,2], [0,1,2], [0,1,2]]
+dif_inter_test = [[0,1,2] , [0,1,2], [0,1,2], [0,1,2]]
 
 # count = np.zeros((len(dif_inter), p))
-count_subset = np.zeros((len(dif_inter), p))  # For subset search
+count_subset = np.zeros((len(dif_inter), p))
 count_icp = np.zeros((len(dif_inter), p))  
 
 results = {}
@@ -112,7 +115,7 @@ for ind_l, l_d in enumerate(dif_inter):
 
         where_to_intervene_test = dif_inter_test[ind_l]
         mask_test = intervene_on_p(where_to_intervene_test, p - p_s)
-        dataset_test = gauss_tl(n_task, n, p, p_s, p_conf, eps, g, lambd, lambd_test)
+        dataset_test = gauss_tl(n_task, n, p, p_s, p_conf, eps, g, lambd, 0.9)
         x_test_ood = dataset_test.test['x_test']
         y_test_ood = dataset_test.test['y_test']
 
@@ -136,32 +139,96 @@ for ind_l, l_d in enumerate(dif_inter):
         results_ood['mean'][rep, ind_l] = error_mean_ood
         print(f'Error mean ood: {error_mean_ood}')
 
-        # print('------------------- 1. True causal ------------------')
-        # print(f'DATA ALPHA: {dataset.alpha}')
-       
+        print(f'------------------- 1. Pooling the data ---------------')
+        # lr_pool = linear_model.LinearRegression()
+
+        # lr_pool.fit(x_train, y_train)
+
+        lr_pool = LassoCV(alphas=[0.01, 0.1, 1.0, 10.0], cv=5)
+        # RidgeCV(alphas=[0.01, 0.1, 1.0, 10.0], cv=5)
+        lr_pool.fit(x_train, y_train)
+        pool_mse = mse(lr_pool, x_test, y_test)
+
+        results['pool'][rep, ind_l] = mse(lr_pool, x_test, y_test)
+        results_ood['pool'][rep, ind_l] = mse(lr_pool, x_test_ood, y_test_ood)
+
+        print(f'Pooling model coeficient: {lr_pool.coef_.flatten()}')
+        print("Bias (intercept):", lr_pool.intercept_)
+
+
+        if pool_mse < 1:
         
-        # alpha = dataset.alpha
-        # X = x_train[:, s_causal]
+            os.makedirs("debug_pool_low_error", exist_ok=True)
 
-        # y_pred = np.dot(x_test[:, s_causal], alpha)
-        # results['true_causal'][rep, ind_l] = np.mean((y_test - y_pred) ** 2)
-        # print(f"Error: { results['true_causal'][rep, ind_l]}")
+            # Đặt tên file có chỉ số rep và task để phân biệt
+            prefix = f"debug_pool_low_error/case_rep{rep}_task{ind_l}"
+
+            # Lưu vào CSV
+            pd.DataFrame(x_train).to_csv(f"{prefix}_x_train.csv", index=False)
+            pd.DataFrame(y_train).to_csv(f"{prefix}_y_train.csv", index=False)
+            pd.DataFrame(x_test).to_csv(f"{prefix}_x_test.csv", index=False)
+            pd.DataFrame(y_test).to_csv(f"{prefix}_y_test.csv", index=False)
+
+            print(f"📝 Đã lưu dữ liệu debug tại {prefix}_*.csv")
+
+        if pool_mse > 200:
+            print(f"⚠️ Pooling error quá cao: {pool_mse:.2f} tại rep={rep}, task={ind_l}")
+
+            # Tạo thư mục nếu chưa có
+            os.makedirs("debug_pool_high_error", exist_ok=True)
+
+            # Đặt tên file có chỉ số rep và task để phân biệt
+            prefix = f"debug_pool_high_error/case_rep{rep}_task{ind_l}"
+
+            # Lưu vào CSV
+            pd.DataFrame(x_train).to_csv(f"{prefix}_x_train.csv", index=False)
+            pd.DataFrame(y_train).to_csv(f"{prefix}_y_train.csv", index=False)
+            pd.DataFrame(x_test).to_csv(f"{prefix}_x_test.csv", index=False)
+            pd.DataFrame(y_test).to_csv(f"{prefix}_y_test.csv", index=False)
+
+            print(f"📝 Đã lưu dữ liệu debug tại {prefix}_*.csv")
+
+        if  results_ood['pool'][rep, ind_l] > 500:
+            print(f"⚠️ Pooling error quá cao: {   results_ood['pool'][rep, ind_l]:.2f} tại rep={rep}, task={ind_l}")
+
+            # Tạo thư mục nếu chưa có
+            os.makedirs("debug_pool_high_error_ood", exist_ok=True)
+
+            # Đặt tên file có chỉ số rep và task để phân biệt
+            prefix = f"debug_pool_high_error_ood/case_rep{rep}_task{ind_l}"
+
+            # Lưu vào CSV
+            pd.DataFrame(x_train).to_csv(f"{prefix}_x_train.csv", index=False)
+            pd.DataFrame(y_train).to_csv(f"{prefix}_y_train.csv", index=False)
+            pd.DataFrame(x_test_ood).to_csv(f"{prefix}_x_test.csv", index=False)
+            pd.DataFrame(y_test_ood).to_csv(f"{prefix}_y_test.csv", index=False)
+
+            print(f"📝 Đã lưu dữ liệu debug tại {prefix}_*.csv")
+        
 
 
-        # y_pred_ood = np.dot(x_test_ood[:, s_causal], alpha)
-        # results_ood['true_causal'][rep, ind_l] = np.mean((y_test_ood - y_pred_ood) ** 2)
-        # print(f"OOD Error: {results_ood['true_causal'][rep, ind_l]}")
+        print (f"Pooling error: {results['pool'][rep, ind_l]}")
+        print(f"Pooling error ood: { results_ood['pool'][rep, ind_l]}")
 
         print ('------------- 1. Causal ----------------')
         s_causal =  np.arange(p_s)
      
         print(f'S causal: {s_causal}')
+        # print(f"Noise: {dataset.train['noise']}")
 
-        lr_causal = linear_model.LinearRegression()
+        lr_causal = LassoCV(alphas=[0.01, 0.1, 1.0, 10.0], cv=5)
+        # RidgeCV(alphas=[0.01, 0.1, 1.0, 10.0], cv=5)
+        # linear_model.LinearRegression()
         lr_causal.fit(x_train[:,s_causal], y_train)
 
         results['causal'][rep, ind_l] = mse(lr_causal, x_test[:,s_causal], y_test)
         results_ood['causal'][rep, ind_l] = mse(lr_causal, x_test_ood[:,s_causal], y_test_ood)
+
+        print(f'DATA ALPHA: {dataset.alpha}')
+        print(f'Causal model coeficient: {lr_causal.coef_.flatten()}')
+        print("Bias (intercept):", lr_causal.intercept_)
+        
+
 
         print (f"Causal error: {results['causal'][rep, ind_l]}")
         print(f"Causal error ood: { results_ood['causal'][rep, ind_l]}")
@@ -179,11 +246,18 @@ for ind_l, l_d in enumerate(dif_inter):
                 count_subset[ind_l, pred] += 1
 
         if s_hat.size> 0:
-            lr_subset_search = linear_model.LinearRegression()
+            lr_subset_search = LassoCV(alphas=[0.01, 0.1, 1.0, 10.0], cv=5)
+            # RidgeCV(alphas=[0.01, 0.1, 1.0, 10.0], cv=5)
+            # linear_model.LinearRegression()
             lr_subset_search.fit(x_train[:,s_hat], y_train)
 
             results['icm'][rep, ind_l] = mse(lr_subset_search, x_test[:,s_hat], y_test)
             results_ood['icm'][rep, ind_l] = mse(lr_subset_search, x_test_ood[:,s_hat], y_test_ood)
+
+            print(f'ICM model coeficient: {lr_subset_search.coef_.flatten()}')
+            print("Bias (intercept):", lr_subset_search.intercept_)
+
+
 
         else: 
             results['icm'][rep, ind_l] = error_mean
@@ -230,7 +304,9 @@ for ind_l, l_d in enumerate(dif_inter):
 
             selected_features = list(result.estimate)
 
-            lr_cicm = linear_model.LinearRegression()
+            lr_cicm = LassoCV(alphas=[0.01, 0.1, 1.0, 10.0], cv=5)
+            # RidgeCV(alphas=[0.01, 0.1, 1.0, 10.0], cv=5)
+            # linear_model.LinearRegression()
             lr_cicm.fit(x_train[:,selected_features], y_train)
 
 
